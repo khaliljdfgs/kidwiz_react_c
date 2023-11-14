@@ -1,4 +1,7 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
+
+import { useAppContext } from '../../../context/appContext';
+
 import {
   Box,
   useTheme,
@@ -9,6 +12,8 @@ import {
   alpha,
 } from '@mui/material';
 
+import axios from 'axios';
+import { DELETE_QUIZ, GET_ALL_QUIZ } from '../../../config/backend_endpoints';
 import {
   DashboardContainer,
   CustomSearchInput,
@@ -28,18 +33,26 @@ const QuizzesHome = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  const { token, logoutUser} = useAppContext();
+
+  const [allQuizesData, setAllQuizesData] = useState([]);
+  const [loadingAllQuizes, setLoadingAllQuizes] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = React.useState({
     isOpen: false,
     index: -1,
+    mode: 'create',
   });
 
   const [isDeleteConfirmationModalOpen, setIsDeleteConfirmationModalOpen] =
     React.useState(false);
 
+  const [loadingDeleteQuiz, setLoadingDeleteQuiz] = useState(false);
+
   const [search, setSearch] = React.useState('');
   const handleSearch = () => {};
 
-  const [quizzesData, setQuizzesData] = React.useState(QuizzesData);
+  // const [quizzesData, setQuizzesData] = React.useState(QuizzesData);
   const [currentSelectedQuiz, setCurrentSelectedQuiz] = React.useState(null);
 
   const [expanded, setExpanded] = React.useState('');
@@ -55,6 +68,42 @@ const QuizzesHome = () => {
   React.useEffect(() => {
     setTopSectionHeight(topSectionRef.current?.offsetHeight || 0);
   }, [topSectionRef.current?.offsetHeight]);
+
+  const authorizedAxios = axios.create({
+    baseURL: '',
+    // timeout: 3000,
+    headers: {
+      "Authorization" : `Bearer ${token}`,
+      'Content-Type': 'multipart/form-data'
+  }
+  });
+
+  // Add a response interceptor
+  authorizedAxios.interceptors.response.use(function (response) {
+    // Any status code that lie within the range of 2xx cause this function to trigger
+    // Do something with response data
+    return response;
+  }, function (error) {
+    if (error.response.status === 401) {
+      logoutUser();
+    }
+    // Any status codes that falls outside the range of 2xx cause this function to trigger
+    // Do something with response error
+    return Promise.reject(error);
+  });
+
+
+  useEffect(()=>{
+    
+    if (!isModalOpen.isOpen && !loadingDeleteQuiz) {
+      loadAllQuizes(authorizedAxios,setLoadingAllQuizes, setAllQuizesData);
+    }
+    if (!loadingDeleteQuiz && isDeleteConfirmationModalOpen) {
+      setIsDeleteConfirmationModalOpen(false);
+    }
+    
+  },[isModalOpen, loadingDeleteQuiz]);
+
 
   return (
     <DashboardContainer
@@ -124,7 +173,7 @@ const QuizzesHome = () => {
 
           <Box
             onClick={() => {
-              setIsModalOpen({ isOpen: true, index: -1 });
+              setIsModalOpen({ isOpen: true, index: -1, mode: 'create' });
             }}
             sx={{
               display: 'flex',
@@ -185,7 +234,8 @@ const QuizzesHome = () => {
             borderRadius: $({ size: 8 }),
           },
         }}>
-        {quizzesData.map((item, index) => {
+
+        {allQuizesData.map((item, index) => {
           return (
             <Accordion
               disableGutters
@@ -314,7 +364,7 @@ const QuizzesHome = () => {
                     <Box
                       onClick={() => {
                         setCurrentSelectedQuiz(item);
-                        setIsModalOpen({ isOpen: true, index: index });
+                        setIsModalOpen({ isOpen: true, index: index, mode: 'update' });
                       }}
                       sx={{
                         display: 'flex',
@@ -381,7 +431,7 @@ const QuizzesHome = () => {
                       lineHeight: $({ size: 25 }),
                       // textTransform: 'uppercase',
                     }}>
-                    {item.subject.label}
+                    {item.subject}
                   </Typography>
                 </Box>
 
@@ -406,8 +456,8 @@ const QuizzesHome = () => {
           setIsModalOpen={setIsModalOpen}
           currentSelectedQuiz={currentSelectedQuiz}
           setCurrentSelectedQuiz={setCurrentSelectedQuiz}
-          quizzesData={quizzesData}
-          setQuizzesData={setQuizzesData}
+          // quizzesData={quizzesData}
+          // setQuizzesData={setQuizzesData}
         />
       )}
 
@@ -492,16 +542,18 @@ const QuizzesHome = () => {
                 },
               }}
               onClick={() => {
-                setIsDeleteConfirmationModalOpen(false);
+                
 
-                const temp = [...quizzesData];
-                temp.splice(
-                  quizzesData.findIndex(
-                    (item) => item.id === currentSelectedQuiz.id
-                  ),
-                  1
-                );
-                setQuizzesData(temp);
+                deleteQuiz(authorizedAxios, currentSelectedQuiz, setLoadingDeleteQuiz);
+
+                // const temp = [...quizzesData];
+                // temp.splice(
+                //   quizzesData.findIndex(
+                //     (item) => item.id === currentSelectedQuiz.id
+                //   ),
+                //   1
+                // );
+                // setQuizzesData(temp);
               }}
             />
           </Box>
@@ -512,3 +564,33 @@ const QuizzesHome = () => {
 };
 
 export default QuizzesHome;
+
+
+
+const loadAllQuizes = async (authorizedAxios, setLoadingAllQuizes, setAllQuizesData ) => {
+  setLoadingAllQuizes(true);
+  try {
+    const response = await authorizedAxios.get(GET_ALL_QUIZ);
+    // console.log(response.data);
+    setAllQuizesData(response.data);
+  } catch (error) {
+    console.error(error);
+  }
+  setLoadingAllQuizes(false);
+} 
+
+const deleteQuiz = async (authorizedAxios, quiz, setLoadingDeleteQuiz)=> {
+  setLoadingDeleteQuiz(true);
+  // console.log("-- ID of Subject --" + subject.id);
+  try {
+    const response = await authorizedAxios.delete(DELETE_QUIZ, {
+      data:{id : quiz.id}
+    });
+    console.log(response.data);
+    
+  } catch (error) {
+    console.error(error);
+  }
+  setLoadingDeleteQuiz(false);
+  
+}

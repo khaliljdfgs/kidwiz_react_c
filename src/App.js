@@ -1,18 +1,21 @@
-import React from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
-import { CssBaseline, ThemeProvider } from '@mui/material';
+import React from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
+import { CssBaseline, ThemeProvider } from "@mui/material";
 
-import { ColorModeContext, useMode } from './theme';
-import { ROUTES } from './config/routes';
+import { ColorModeContext, useMode } from "./theme";
+import { ROUTES } from "./config/routes";
 
 import {
   LoginScreen,
   SignUpScreen,
   ResetPasswordScreen,
   ConfirmationScreen,
-} from './screens/authentication';
+  ProtectedRoutes,
+  ParentProtectedRoutes,
+  AdminProtectedRoutes
+} from "./screens/authentication";
 
-import { UnderDevelopmentScreen } from './screens/common';
+import { UnderDevelopmentScreen } from "./screens/common";
 
 import {
   AddChildrenScreen,
@@ -29,7 +32,7 @@ import {
   ValuesAssessmentTestIntroScreen,
   ValuesAssessmentTestQuestionsScreen,
   ValuesAssessmentTestResultScreen,
-} from './screens/onBoarding';
+} from "./screens/onBoarding";
 
 import {
   DashboardHome,
@@ -42,14 +45,14 @@ import {
   ExploreHome,
   JournalHome,
   SettingsHome,
-} from './screens/parent';
+} from "./screens/parent";
 
 import {
   ReportCardHome,
   LearnSubjectHome as ChildLearnSubjectHome,
   LearnSubjectDetail as ChildLearnSubjectDetail,
   LearnSubjectChat as ChildLearnSubjectChat,
-} from './screens/child';
+} from "./screens/child";
 
 import {
   AITrainingHome,
@@ -58,13 +61,14 @@ import {
   QuizzesHome,
   RolePlayingHome,
   SubjectsHome,
-} from './screens/admin';
+} from "./screens/admin";
 
 import {
   ParentDashboardLayout,
   ChildDashboardLayout,
   AdminDashboardLayout,
-} from './components';
+} from "./components";
+import DailyQuizResult from "./screens/parent/dailyQuiz/DailyQuizResult";
 
 const Redirect = ({ to }) => {
   const navigate = useNavigate();
@@ -90,20 +94,21 @@ const App = () => {
       setIsTablet(window.innerWidth < 900);
     };
     handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   /* PATCH: ADDED THIS TO DISABLE ALL VIEWS EXCEPT DESKTOP */
-  if ((isMobile || isTablet) && process.env.REACT_APP_DEV_MODE === '0') {
+  if ((isMobile || isTablet) && process.env.REACT_APP_DEV_MODE === "0") {
     return (
       <div
         style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-        }}>
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
         {isMobile ? (
           <h3>Mobile Version Not Available!</h3>
         ) : (
@@ -118,15 +123,7 @@ const App = () => {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Routes>
-          <Route
-            path='/'
-            element={<Redirect to={ROUTES.AUTHENTICATION.LOGIN} />}
-          />
-
-          <Route
-            path={ROUTES.AUTHENTICATION.LOGIN}
-            element={<LoginScreen />}
-          />
+          <Route path={ROUTES.AUTHENTICATION.LOGIN} element={<LoginScreen />} />
           <Route
             path={ROUTES.AUTHENTICATION.SIGN_UP}
             element={<SignUpScreen />}
@@ -135,14 +132,27 @@ const App = () => {
             path={ROUTES.AUTHENTICATION.RESET_PASSWORD}
             element={<ResetPasswordScreen />}
           />
+
+          <Route
+            path="/"
+            element={<Redirect to={ROUTES.AUTHENTICATION.LOGIN} />}
+          />
           <Route
             path={ROUTES.AUTHENTICATION.CONFIRMATION}
-            element={<ConfirmationScreen />}
+            element={
+              <ProtectedRoutes>
+                <ConfirmationScreen />
+              </ProtectedRoutes>
+            }
           />
 
           <Route
             path={ROUTES.ON_BOARDING.ADD_CHILDREN}
-            element={<AddChildrenScreen />}
+            element={
+              <ProtectedRoutes>
+               <AddChildrenScreen />
+            </ProtectedRoutes>
+            }
           />
           <Route
             path={ROUTES.ON_BOARDING.PERSONALITY_TESTS}
@@ -199,11 +209,15 @@ const App = () => {
 
           <Route
             path={ROUTES.PARENT.DASHBOARD.INDEX}
-            element={<ParentDashboardLayout />}>
-            <Route
-              index
-              element={<DashboardHome />}
-            />
+            element={
+              <ProtectedRoutes>
+                <ParentProtectedRoutes>
+                  <ParentDashboardLayout />
+                </ParentProtectedRoutes>
+              </ProtectedRoutes>
+            }
+          >
+            <Route index element={<DashboardHome />} />
             <Route
               index
               path={ROUTES.PARENT.PERFORMANCE.INDEX}
@@ -231,6 +245,11 @@ const App = () => {
             />
             <Route
               index
+              path={ROUTES.PARENT.DAILY_QUIZ.RESULT}
+              element={<DailyQuizResult />}
+            />
+            <Route
+              index
               path={ROUTES.PARENT.IMPROVE_PARENTING.INDEX}
               element={<ImproveParentingHome />}
             />
@@ -250,15 +269,13 @@ const App = () => {
               element={<SettingsHome />}
             />
 
-            <Route
-              path='*'
-              element={<UnderDevelopmentScreen />}
-            />
+            <Route path="*" element={<UnderDevelopmentScreen />} />
           </Route>
 
           <Route
             path={ROUTES.CHILD.DASHBOARD.INDEX}
-            element={<ChildDashboardLayout />}>
+            element={<ChildDashboardLayout />}
+          >
             <Route
               index
               element={<Redirect to={ROUTES.CHILD.REPORT_CARD.INDEX} />}
@@ -294,15 +311,19 @@ const App = () => {
               element={<ExploreHome />}
             />
 
-            <Route
-              path='*'
-              element={<UnderDevelopmentScreen />}
-            />
+            <Route path="*" element={<UnderDevelopmentScreen />} />
           </Route>
 
           <Route
             path={ROUTES.ADMIN.DASHBOARD.INDEX}
-            element={<AdminDashboardLayout />}>
+            element={
+              <ProtectedRoutes>
+                <AdminProtectedRoutes>
+                  <AdminDashboardLayout />
+                </AdminProtectedRoutes>
+              </ProtectedRoutes>
+          }
+          >
             <Route
               index
               element={<Redirect to={ROUTES.ADMIN.PROMPTS.INDEX} />}
@@ -338,16 +359,10 @@ const App = () => {
               element={<KeywordsAlertHome />}
             />
 
-            <Route
-              path='*'
-              element={<UnderDevelopmentScreen />}
-            />
+            <Route path="*" element={<UnderDevelopmentScreen />} />
           </Route>
 
-          <Route
-            path='*'
-            element={<UnderDevelopmentScreen />}
-          />
+          <Route path="*" element={<UnderDevelopmentScreen />} />
         </Routes>
       </ThemeProvider>
     </ColorModeContext.Provider>

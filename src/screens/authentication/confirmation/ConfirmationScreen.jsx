@@ -3,6 +3,8 @@ import { Box, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 
+import { useAppContext } from '../../../context/appContext';
+
 import { CustomButton } from '../../../components';
 
 import { ASSETS } from '../../../config/assets';
@@ -15,6 +17,8 @@ const ConfirmationScreen = () => {
   const colors = tokens(theme.palette.mode);
 
   const navigate = useNavigate();
+
+  const { user } = useAppContext();
 
   return (
     <Box
@@ -40,11 +44,16 @@ const ConfirmationScreen = () => {
           borderRadius: $({ size: 24 }),
           padding: {
             xs: `${$({ size: 48 })} ${$({ size: 32 })}`,
-            lg: `${$({ size: 64 })}`,
+            lg: $({ size: 80 }),
+          },
+          pt: {
+            xs: $({ size: 95 }),
+            lg: $({ size: 95 }),
           },
           margin: `${$({ size: 16 })}`,
-          maxWidth: $({ size: 600 }),
-          gap: $({ size: 32 }),
+          minWidth: $({ size: 600 }),
+          minHeight: $({ size: 564 }),
+          gap: $({ size: 68 }),
         }}>
         <Box
           sx={{
@@ -54,13 +63,16 @@ const ConfirmationScreen = () => {
             justifyContent: 'center',
             gap: {
               xs: $({ size: 24 }),
-              lg: $({ size: 32 }),
+              lg: $({ size: 48 }),
             },
           }}>
           <img
             src={ASSETS.AUTHENTICATION.ICONS.CONFIRMATION_LIKE}
             alt='logo'
-            style={{ height: $({ size: 200 }) }}
+            style={{
+              height: $({ size: 200 }),
+              // marginTop: `-${$({ size: 36 })}`,
+            }}
           />
           <Typography
             sx={{
@@ -69,15 +81,22 @@ const ConfirmationScreen = () => {
               lineHeight: $({ size: 30 }),
               textAlign: 'center',
               color: colors.solids.black,
+              mt: `-${$({ size: 8 })}`,
+              mb: `-${$({ size: 8 })}`,
             }}>
             Your account was successfully created.
           </Typography>
         </Box>
 
         <CustomButton
-          label='Go to Home Page'
+          label= {user.no_of_chlid === 0 ? 'Let\'s Complete Onboarding' : 'Go to Home Page'}
           onClick={() => {
-            navigate(ROUTES.PARENT.DASHBOARD.INDEX);
+            if( user.no_of_chlid === 0){
+              navigate(ROUTES.ON_BOARDING.ADD_CHILDREN);
+            }else if( user.no_of_chlid > 0){
+              navigate(ROUTES.PARENT.DASHBOARD.INDEX);
+            }
+            
           }}
         />
       </Box>

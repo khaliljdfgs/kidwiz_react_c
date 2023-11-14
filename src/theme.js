@@ -10,149 +10,126 @@ export const tokens = (mode) => ({
           900: '#FFFFFF',
         },
         grey: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#e0e0e0',
+          200: '#c2c2c2',
+          300: '#a3a3a3',
+          400: '#858585',
+          500: '#757575', // For Gret Text
+          600: '#525252',
+          700: '#3d3d3d',
+          800: '#292929',
+          900: '#ECECEC', //
         },
         primary: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#d0d1d5',
+          200: '#a1a4ab',
+          300: '#727681',
+          400: '#1F2A40',
+          500: '#141b2d',
+          600: '#101624',
+          700: '#0c101b',
+          800: '#080b12',
+          900: '#040509',
         },
         greenAccent: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#dbf5ee',
+          200: '#b7ebde',
+          300: '#94e2cd',
+          400: '#70d8bd',
+          500: '#72B216',
+          600: '#3da58a',
+          700: '#2e7c67',
+          800: '#1e5245',
+          900: '#0f2922',
         },
         redAccent: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#f8dcdb',
+          200: '#f1b9b7',
+          300: '#e99592',
+          400: '#e2726e',
+          500: '#db4f4a',
+          600: '#af3f3b',
+          700: '#832f2c',
+          800: '#58201e',
+          900: '#2c100f',
         },
         blueAccent: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#e1e2fe',
+          200: '#c3c6fd',
+          300: '#a4a9fc',
+          400: '#868dfb',
+          500: '#6870fa',
+          600: '#535ac8',
+          700: '#3e4396',
+          800: '#2a2d64',
+          900: '#151632',
         },
         sideBarShadow: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#E2ECF980',
         },
       }
     : {
         white: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
           800: '#FAFAFA',
-          900: '#FAFAFA', //
+          900: '#FFFFFF',
         },
         grey: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#141414',
+          200: '#292929',
+          300: '#3d3d3d',
+          400: '#525252',
+          500: '#757575', // For Gret Text
+          600: '#858585',
+          700: '#a3a3a3',
+          800: '#c2c2c2',
+          900: '#ECECEC', //
         },
         primary: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#040509',
+          200: '#080b12',
+          300: '#0c101b',
+          400: '#f2f0f0', // manually changed
+          500: '#141b2d',
+          600: '#1F2A40',
+          700: '#727681',
+          800: '#a1a4ab',
+          900: '#d0d1d5',
         },
         greenAccent: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#65AC00', // for search button
+          200: '#93CA45', // billing tab
+          300: '#2e7c67',
+          400: '#BDEE77', // For child card
+          500: '#72B216', // For buttons
+          600: '#88BF3A', // GreenPressed
+          700: '#94e2cd',
+          800: '#b7ebde',
+          900: '#dbf5ee',
         },
         redAccent: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#2c100f',
+          200: '#58201e',
+          300: '#E44A4A', //
+          400: '#EA7070', // delete button
+          500: '#E76A6A', // For buttons (danger, alert)
+          600: '#e2726e',
+          700: '#e99592',
+          800: '#F3A8A8', //
+          900: '#f8dcdb',
         },
         blueAccent: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#151632',
+          200: '#2a2d64',
+          300: '#3e4396',
+          400: '#535ac8',
+          500: '#6870fa',
+          600: '#868dfb',
+          700: '#a4a9fc',
+          800: '#c3c6fd',
+          900: '#e1e2fe',
         },
         sideBarShadow: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#E2ECF9',
         },
         solids: {
           black: '#000000',
@@ -180,15 +157,11 @@ export const tokens = (mode) => ({
           mark: '#757575',
         },
         verticalFiller: {
-          100: '#FAFAFA',
-          200: '#FAFAFA',
-          300: '#FAFAFA',
-          400: '#FAFAFA',
-          500: '#FAFAFA', // For Gret Text
-          600: '#FAFAFA',
-          700: '#FAFAFA',
-          800: '#FAFAFA',
-          900: '#FAFAFA', //
+          100: '#A1D8E4',
+          200: '#FC99CE',
+          300: '#ECC283',
+          400: '#BDEE77',
+          500: '#C792C8',
         },
         personality: {
           openness: '#51B4CB',

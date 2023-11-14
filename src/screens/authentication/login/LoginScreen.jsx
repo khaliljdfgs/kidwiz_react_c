@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Checkbox,
@@ -8,6 +8,8 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
+
+import { useAppContext } from '../../../context/appContext';
 
 import {
   AuthenticationFormBackground,
@@ -25,9 +27,34 @@ const LoginScreen = () => {
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
 
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [rememberMe, setRememberMe] = React.useState(false);
+  const { loginUser, showAlert, alertText, isLoading, user } = useAppContext();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+
+  const [errorMessages, setErrorMessages] = useState({email:'',password:''});
+
+  useEffect(()=>{
+
+    if (isLoading === false && showAlert === false && user !== null) {
+      if (user.role.toLowerCase() === "parent") {
+        // console.log("Its parent");
+        if( user.no_of_chlid === 0){
+          navigate(ROUTES.ON_BOARDING.ADD_CHILDREN);
+        }else if( user.no_of_chlid > 0){
+          navigate(ROUTES.PARENT.DASHBOARD.INDEX);
+        }
+        
+      }
+      else if (user.role.toLowerCase() === "admin") {
+        // console.log("Its Admin");
+        navigate(ROUTES.ADMIN.DASHBOARD.INDEX);
+      }
+    }  
+    
+
+  },[isLoading, user]);
 
   return (
     <Box
@@ -43,7 +70,7 @@ const LoginScreen = () => {
           item
           xs={12}
           md={6}
-          lg={4}>
+          lg={4.25}>
           <AuthenticationFormBackground
             title='Sign in to continue'
             sx={{
@@ -55,17 +82,35 @@ const LoginScreen = () => {
             }}>
             <Box
               sx={{
-                paddingTop: $({ size: 16 }),
-                gap: $({ size: 16 }),
+                paddingTop: $({ size: 10 }),
+                gap: $({ size: 12 }),
                 display: 'flex',
                 flexDirection: 'column',
               }}>
+
+            { showAlert && 
+              <Typography
+                sx={{
+                  fontSize: $({ size: 16 }),
+                  fontWeight: '400',
+                  color: colors.redAccent[500],
+                  lineHeight: $({ size: 30 }),
+                  paddingTop: $({ size: 4 }),
+                }}>
+                  {alertText}
+              </Typography>
+            }
+
+
+
               <CustomTextInput
                 label='Email address'
                 placeholder='you@email.com'
                 type='email'
                 value={email}
+                error={errorMessages.email}
                 onChange={(e) => setEmail(e.target.value)}
+                labelStyle={{ pb: $({ size: 2 }) }}
               />
 
               <CustomTextInput
@@ -73,7 +118,9 @@ const LoginScreen = () => {
                 placeholder='•••••••••'
                 type='password'
                 value={password}
+                error={errorMessages.password}
                 onChange={(e) => setPassword(e.target.value)}
+                labelStyle={{ pb: $({ size: 2 }) }}
               />
 
               <FormControlLabel
@@ -107,6 +154,7 @@ const LoginScreen = () => {
                   alignItems: 'start',
                   margin: '0',
                   padding: '0',
+                  mt: $({ size: 20 }),
                 }}
               />
 
@@ -125,10 +173,23 @@ const LoginScreen = () => {
               </Typography>
 
               <CustomButton
-                label='Log in'
+                label= { isLoading ? 'Loging in' : 'Log in'}
+                disabled = {isLoading}
                 onClick={() => {
-                  navigate(ROUTES.ON_BOARDING.ADD_CHILDREN);
+                  if (!email) {
+                    setErrorMessages({...errorMessages, email:'Required!'})
+                    return
+                  }
+                  if (!password) {
+                    setErrorMessages({...errorMessages, password:'Required!'})
+                    return
+                  }
+
+                  loginUser({currentUser : { email, password}});
+
+                  
                 }}
+                sx={{ mt: $({ size: 11 }) }}
               />
 
               <Box
@@ -136,8 +197,8 @@ const LoginScreen = () => {
                   display: 'flex',
                   flexDirection: 'row',
                   alignItems: 'center',
-                  margin: `${$({ size: 8 })} 0`,
-                  gap: $({ size: 8 }),
+                  margin: `${$({ size: 17 })} 0`,
+                  gap: $({ size: 10 }),
                 }}>
                 <Box
                   sx={{
@@ -166,13 +227,14 @@ const LoginScreen = () => {
 
               <CustomButton
                 label='Continue with Google'
-                onClick={() => {}}
+                onClick={() => {    }}
                 sx={{
                   'backgroundColor': colors.white[800],
                   'fontWeight': '400',
                   'color': colors.solids.black,
                   'textTransform': 'none',
                   '&:hover': { backgroundColor: colors.grey[900] },
+                  'mb': $({ size: 6 }),
                 }}
                 leftIcon={
                   <img
@@ -205,7 +267,7 @@ const LoginScreen = () => {
 
             <Box
               sx={{
-                margin: `${$({ size: 12 })} 0 ${$({ size: 24 })} 0`,
+                margin: `${$({ size: 16 })} 0 ${$({ size: 16 })} 0`,
                 textAlign: 'center',
               }}>
               <Typography
@@ -236,7 +298,7 @@ const LoginScreen = () => {
           item
           xs={12}
           md={6}
-          lg={8}
+          lg={7.75}
           sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -250,30 +312,32 @@ const LoginScreen = () => {
               lineHeight: $({ size: 25 }),
               fontStyle: 'italic',
               alignSelf: 'start',
-              padding: '5%',
-              width: {
-                xs: '100%',
-                md: '88%',
-                lg: '66%',
-              },
+              width: $({ size: 609 }),
+              mt: $({ size: 87 }),
+              ml: $({ size: 61 }),
+              mb: $({ size: 40 }),
             }}>
             "The future of early childhood education lies in unlocking the
             limitless potential of every child, nurturing their curiosity, and
             empowering them to become lifelong learners."
           </Typography>
           <Box
-            component='img'
-            src={ASSETS.AUTHENTICATION.MAIN_BACKGROUND}
-            alt='main-background'
             sx={{
-              objectFit: 'contain',
-              objectPosition: 'center',
-              margin: '0 0 8% 0',
-              width: '80%',
-              maxHeight: $({ size: 575 }),
-              maxWidth: $({ size: 650 }),
-            }}
-          />
+              px: $({ size: 60 }),
+              pb: $({ size: 30 }),
+              width: '100%',
+            }}>
+            <Box
+              component='img'
+              src={ASSETS.AUTHENTICATION.MAIN_BACKGROUND}
+              alt='main-background'
+              sx={{
+                objectFit: 'contain',
+                objectPosition: 'center',
+                width: 'inherit',
+              }}
+            />
+          </Box>
         </Grid>
       </Grid>
     </Box>

@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+
+
+
 import {
   Box,
   useTheme,
@@ -8,6 +11,11 @@ import {
   AccordionDetails,
   alpha,
 } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
+
+import axios from 'axios';
+import { useAppContext } from '../../../context/appContext';
+import { PROMPTS } from '../../../config/backend_endpoints';
 
 import {
   DashboardContainer,
@@ -23,15 +31,44 @@ import { tokens } from '../../../theme';
 import { $ } from '../../../utils';
 
 import PromptManagementModal from './PromptManagementModal';
-import { PromptsData } from './data';
+var PromptsData = [];
 
 const PromptsHome = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  const { token, logoutUser } = useAppContext();
+  const authorizedAxios = axios.create({
+    baseURL: '',
+    // timeout: 3000,
+    headers: {
+      "Authorization" : `Bearer ${token}`,
+      'Content-Type': 'multipart/form-data'
+  }
+  });
+
+  // Add a response interceptor
+  authorizedAxios.interceptors.response.use(function (response) {
+    // Any status code that lie within the range of 2xx cause this function to trigger
+    // Do something with response data
+    return response;
+  }, function (error) {
+    if (error.response.status === 401) {
+      logoutUser();
+    }
+    // Any status codes that falls outside the range of 2xx cause this function to trigger
+    // Do something with response error
+    return Promise.reject(error);
+  });
+
+  const [loadingPrompts, setLoadingPrompts] = useState(false);
+  const [loadingDeletePrompt, setLoadingDeletePrompt] = useState(false);
+
+
   const [isModalOpen, setIsModalOpen] = React.useState({
     isOpen: false,
     index: -1,
+    mode: 'create',
   });
 
   const [isDeleteConfirmationModalOpen, setIsDeleteConfirmationModalOpen] =
@@ -64,6 +101,17 @@ const PromptsHome = () => {
   React.useEffect(() => {
     setTopSectionHeight(topSectionRef.current?.offsetHeight || 0);
   }, [topSectionRef.current?.offsetHeight]);
+
+  useEffect(()=>{
+    if (!loadingDeletePrompt && isDeleteConfirmationModalOpen) {
+      setIsDeleteConfirmationModalOpen(false);
+      setCurrentSelectedPrompt(null);
+    }
+    if (!isModalOpen.isOpen) {
+      loadPrompts(authorizedAxios, setLoadingPrompts,  setPromptsData);
+      
+    }
+  },[isModalOpen,loadingDeletePrompt]);
 
   return (
     <DashboardContainer
@@ -134,7 +182,7 @@ const PromptsHome = () => {
 
           <Box
             onClick={() => {
-              setIsModalOpen({ isOpen: true, index: -1 });
+              setIsModalOpen({ isOpen: true, index: -1, mode: 'create' });
             }}
             sx={{
               display: 'flex',
@@ -181,15 +229,15 @@ const PromptsHome = () => {
               setPromptsData(PromptsData);
             } else if (tab === 1) {
               setPromptsData(
-                PromptsData.filter((item) => item.type === 'foundational')
+                PromptsData.filter((item) => item.category === 'foundational')
               );
             } else if (tab === 2) {
               setPromptsData(
-                PromptsData.filter((item) => item.type === 'buttons')
+                PromptsData.filter((item) => item.category === 'buttons')
               );
             } else if (tab === 3) {
               setPromptsData(
-                PromptsData.filter((item) => item.type === 'chat-command')
+                PromptsData.filter((item) => item.category === 'chat-command')
               );
             }
           }}
@@ -233,6 +281,26 @@ const PromptsHome = () => {
             borderRadius: $({ size: 8 }),
           },
         }}>
+
+        { loadingPrompts && 
+            <Box sx={{
+              minHeight:"100px",
+            }}>
+              <CircularProgress
+                size={50}
+                sx={{
+                  color: colors.solids.green,
+                  position: 'relative',
+                  top: '50%',
+                  left: '50%',
+                  // marginTop: '-12px',
+                  marginLeft: '-12px',
+                }}
+              />
+            </Box>
+        }
+
+
         {promptsData.map((item, index) => {
           return (
             <Accordion
@@ -362,7 +430,7 @@ const PromptsHome = () => {
                     <Box
                       onClick={() => {
                         setCurrentSelectedPrompt(item);
-                        setIsModalOpen({ isOpen: true, index: index });
+                        setIsModalOpen({ isOpen: true, index: index, mode : 'update' });
                       }}
                       sx={{
                         display: 'flex',
@@ -404,7 +472,7 @@ const PromptsHome = () => {
                   display: 'flex',
                   flexDirection: 'column',
                 }}>
-                {item.type.toLowerCase() === 'buttons' && (
+                {item.category.toLowerCase() === 'buttons' && (
                   <Box
                     sx={{
                       display: 'flex',
@@ -489,13 +557,13 @@ const PromptsHome = () => {
                           fontWeight: '500',
                           color: colors.extra.grey1,
                         }}>
-                        {item.scoring ? 'Yes' : 'No'}
+                        {item.activeScoring ? 'Yes' : 'No'}
                       </Typography>
                     </Box>
                   </Box>
                 )}
 
-                {item.type.toLowerCase() === 'chat-command' && (
+                {item.category.toLowerCase() === 'chat-command' && (
                   <Box
                     sx={{
                       display: 'flex',
@@ -532,7 +600,7 @@ const PromptsHome = () => {
                     padding: 0,
                     marginLeft: $({ size: 18 }),
                   }}>
-                  {item.prompts.map((prompt, index) => {
+                  {item.prompts.split(",").map((prompt, index) => {
                     return (
                       <li
                         key={`prompt-${index}-${item.id}`}
@@ -627,6 +695,24 @@ const PromptsHome = () => {
               ?
             </Typography>
           </Box>
+          {
+            loadingDeletePrompt && 
+            <Box sx={{
+              minHeight:"100px",
+            }}>
+              <CircularProgress
+                size={50}
+                sx={{
+                  color: colors.solids.green,
+                  position: 'relative',
+                  top: '50%',
+                  left: '50%',
+                  // marginTop: '-12px',
+                  marginLeft: '-12px',
+                }}
+              />
+            </Box>
+          }
           <Box sx={{ flex: 1 }} />
           <Box
             sx={{
@@ -655,16 +741,9 @@ const PromptsHome = () => {
                 },
               }}
               onClick={() => {
-                setIsDeleteConfirmationModalOpen(false);
+                deletePrompt(authorizedAxios, currentSelectedPrompt, setLoadingDeletePrompt);
+                
 
-                const temp = [...promptsData];
-                temp.splice(
-                  promptsData.findIndex(
-                    (item) => item.id === currentSelectedPrompt.id
-                  ),
-                  1
-                );
-                setPromptsData(temp);
               }}
             />
           </Box>
@@ -675,3 +754,33 @@ const PromptsHome = () => {
 };
 
 export default PromptsHome;
+
+const loadPrompts = async (authorizedAxios, setLoadingPrompts, setPromptsData)=>{
+  setLoadingPrompts(true);
+  try {
+    const response = await authorizedAxios.get(PROMPTS.GET_ALL);
+    // console.log(response);
+    PromptsData = response.data
+    setPromptsData(PromptsData);
+    // console.log("Done");
+  } catch (error) {
+    console.error(error);
+  }
+  setLoadingPrompts(false);
+}
+
+const deletePrompt = async (authorizedAxios, prompt, setLoadingDeletePrompt)=> {
+  setLoadingDeletePrompt(true);
+  // console.log("-- ID of Subject --" + subject.id);
+  try {
+    const response = await authorizedAxios.delete(PROMPTS.DELETE, {
+      data:{id : prompt.id}
+    });
+    console.log(response.data);
+    
+  } catch (error) {
+    console.error(error);
+  }
+  setLoadingDeletePrompt(false);
+  
+}

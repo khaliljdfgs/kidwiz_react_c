@@ -4,11 +4,18 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { Pie } from '@nivo/pie';
 import { useNavigate } from 'react-router-dom';
 
+import { useAppContext } from '../../../context/appContext';
+
+import SelectChildAndDatePanel from '../../../components/parentDashboard/SelectChildAndDatePanel';
+import SelectedChildWithTimeDetails from '../../../components/parentDashboard/SelectedChildWithTimeDetails';
+// import SelectChildAndDatePanel from '../../../components/parent/SelectChildAndDatePanel';
+// import SelectedChildWithTimeDetails from '../../../components/parent/SelectedChildWithTimeDetails';
+
 import {
   CustomButton,
-  CustomDropDown,
+  // CustomDropDown,
   DashboardContainer,
-  QuestionProgressBar,
+  // QuestionProgressBar,
 } from '../../../components';
 
 import {
@@ -31,38 +38,40 @@ const DashboardHome = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  const { users_children, selected_Child_index, changeSelectedChild }  = useAppContext();
+
   const navigate = useNavigate();
 
-  const childData = [
-    {
-      fullname: 'Liam Johnson',
-      email: 'labanovskiy@gmail.com',
-      photo: ASSETS.ON_BOARDING.CHILD,
-    },
-    {
-      fullname: 'Alex Johnson',
-      email: 'samhar25@gmail.com',
-      photo: ASSETS.ON_BOARDING.CHILD,
-    },
-    {
-      fullname: 'Mike Johnson',
-      email: 'mikeluther1@gmail.com',
-      photo: ASSETS.ON_BOARDING.CHILD,
-    },
-  ];
+  // const childData = [
+  //   {
+  //     fullname: 'Liam Johnson',
+  //     email: 'labanovskiy@gmail.com',
+  //     photo: ASSETS.ON_BOARDING.CHILD,
+  //   },
+  //   {
+  //     fullname: 'Alex Johnson',
+  //     email: 'samhar25@gmail.com',
+  //     photo: ASSETS.ON_BOARDING.CHILD,
+  //   },
+  //   {
+  //     fullname: 'Mike Johnson',
+  //     email: 'mikeluther1@gmail.com',
+  //     photo: ASSETS.ON_BOARDING.CHILD,
+  //   },
+  // ];
 
-  const [childDropDownOpen, setChildDropDownOpen] = React.useState(false);
-  const [selectedChild, setSelectedChild] = React.useState(childData[0]);
+  // const [childDropDownOpen, setChildDropDownOpen] = React.useState(false);
+  // const [selectedChild, setSelectedChild] = React.useState(users_children[selected_Child_index]);
 
-  const [datesDropDownOpen, setDatesDropDownOpen] = React.useState(false);
-  const [selectedDates, setSelectedDates] = React.useState({});
+  // const [datesDropDownOpen, setDatesDropDownOpen] = React.useState(false);
+  // const [selectedDates, setSelectedDates] = React.useState({});
 
-  React.useEffect(() => {
-    setSelectedDates({
-      startDate: 'April 9, 2023',
-      endDate: 'May 6, 2023',
-    });
-  }, []);
+  // React.useEffect(() => {
+  //   setSelectedDates({
+  //     startDate: 'April 9, 2023',
+  //     endDate: 'May 6, 2023',
+  //   });
+  // }, []);
 
   const [isPersonalityTestCompleted, setIsPersonalityTestCompleted] =
     React.useState(false);
@@ -149,7 +158,7 @@ const DashboardHome = () => {
   return (
     <DashboardContainer
       disableContainer
-      wrapperStyle={{ position: 'relative' }}>
+      wrapperStyle={{ position: 'relative', overflowY: 'scroll' }}>
       <Grid
         container
         sx={{
@@ -159,7 +168,7 @@ const DashboardHome = () => {
           display: 'flex',
           flexDirection: { xs: 'column', lg: 'row' },
         }}>
-        {(childDropDownOpen || datesDropDownOpen) && (
+        {/* {(childDropDownOpen || datesDropDownOpen) && (
           <Box
             onClick={() => {
               setChildDropDownOpen(false);
@@ -176,7 +185,7 @@ const DashboardHome = () => {
               borderRadius: $({ size: 12 }),
             }}
           />
-        )}
+        )} */}
 
         <Grid
           item
@@ -189,7 +198,7 @@ const DashboardHome = () => {
             justifyContent: 'space-between',
             gap: $({ size: 24 }),
           }}>
-          <Grid
+          {/* <Grid
             container
             sx={{
               backgroundColor: colors.white[800],
@@ -242,15 +251,16 @@ const DashboardHome = () => {
                 inputOpenStyle={{
                   padding: `${$({ size: 12 })} ${$({ size: 16 })}`,
                 }}
-                data={childData.map((item) => {
+                data={users_children.map((item, index) => {
                   return {
                     onClick: () => {
-                      setSelectedChild(item);
+                      setSelectedChild(item); // remove this lately
+                      changeSelectedChild(index);
                     },
                     component: (
                       <>
                         <img
-                          src={item.photo}
+                          src={item.img}
                           alt={item.fullname}
                           style={{
                             width: $({ size: 40 }),
@@ -295,7 +305,7 @@ const DashboardHome = () => {
                               whiteSpace: 'nowrap',
                               overflow: 'hidden',
                             }}>
-                            {item.email}
+                            {`${item.age} years old ${item.gender === 'female' ? 'girl':'boy'}`}
                           </Typography>
                         </Box>
                       </>
@@ -326,7 +336,7 @@ const DashboardHome = () => {
                   visibility: selectedChild.fullname ? 'visible' : 'hidden',
                 }}>
                 <Avatar
-                  src={selectedChild?.photo || ''}
+                  src={users_children[selected_Child_index]?.img || ''}
                   sx={{
                     width: $({ size: 40 }),
                     height: $({ size: 40 }),
@@ -348,7 +358,7 @@ const DashboardHome = () => {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                     }}>
-                    {selectedChild?.fullname || ''}
+                    {users_children[selected_Child_index]?.fullname || ''}
                   </Typography>
 
                   <Typography
@@ -360,7 +370,7 @@ const DashboardHome = () => {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                     }}>
-                    {selectedChild?.email || ''}
+                    {`${users_children[selected_Child_index].age} years old ${users_children[selected_Child_index].gender === 'female' ? 'girl':'boy'}`}
                   </Typography>
                 </Box>
               </Box>
@@ -421,7 +431,9 @@ const DashboardHome = () => {
                   visibility: selectedDates?.startDate ? 'visible' : 'hidden',
                 }}>{`${selectedDates?.startDate} 🡢 ${selectedDates?.endDate}`}</Typography>
             </Grid>
-          </Grid>
+          </Grid> */}
+
+          <SelectChildAndDatePanel/>
 
           <Box
             sx={{
@@ -568,7 +580,7 @@ const DashboardHome = () => {
           </Box>
         </Grid>
 
-        {selectedChild.fullname && (
+        {users_children[selected_Child_index].fullname && (
           <Grid
             item
             xs={12}
@@ -595,8 +607,11 @@ const DashboardHome = () => {
                 height: '100%',
                 padding: $({ size: 24 }),
                 gap: $({ size: 24 }),
+                // backgroundColor:'red',
+                // overflowY:'auto',
               }}>
-              <Box
+              
+              {/* <Box
                 sx={{
                   display: 'flex',
                   gap: $({ size: 16 }),
@@ -604,7 +619,7 @@ const DashboardHome = () => {
                   flexDirection: { xs: 'column', sm: 'row' },
                 }}>
                 <Avatar
-                  src={selectedChild.photo}
+                  src={users_children[selected_Child_index].img}
                   sx={{
                     width: $({ size: 112 }),
                     height: $({ size: 112 }),
@@ -629,7 +644,7 @@ const DashboardHome = () => {
                       fontSize: $({ size: 24 }),
                       color: colors.solids.black,
                     }}>
-                    {selectedChild.fullname}
+                    {users_children[selected_Child_index].fullname}
                   </Typography>
 
                   <Box
@@ -715,7 +730,10 @@ const DashboardHome = () => {
                     </Box>
                   </Box>
                 </Box>
-              </Box>
+              </Box> */}
+
+              <SelectedChildWithTimeDetails />
+              
 
               <Box
                 sx={{
@@ -1169,6 +1187,7 @@ const DashboardHome = () => {
             </Box>
           </Grid>
         )}
+        
       </Grid>
     </DashboardContainer>
   );

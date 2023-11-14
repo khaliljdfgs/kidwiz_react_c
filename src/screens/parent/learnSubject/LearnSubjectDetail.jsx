@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Typography, alpha, useTheme } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -16,7 +16,7 @@ import { ROUTES } from '../../../config/routes';
 import { tokens } from '../../../theme';
 import { $, DarkenHexColor } from '../../../utils';
 
-import { SubjectDetailData } from './data';
+var SubjectDetailData = [];
 
 const LearnSubjectTopic = () => {
   const theme = useTheme();
@@ -24,6 +24,8 @@ const LearnSubjectTopic = () => {
 
   const navigate = useNavigate();
   const { state } = useLocation();
+  const [subject, setSubject] = useState(state.subject);
+  SubjectDetailData = state.subject.courses;
 
   const [search, setSearch] = React.useState('');
   const [selection, setSelection] = React.useState({});
@@ -32,7 +34,7 @@ const LearnSubjectTopic = () => {
 
   React.useEffect(() => {
     setSubjectDetailData(SubjectDetailData);
-  }, [state]);
+  }, [subject]);
 
   const HandleBeginLearning = () => {
     navigate(ROUTES.PARENT.LEARN_SUBJECT.CHAT);
@@ -46,18 +48,41 @@ const LearnSubjectTopic = () => {
   };
 
   return (
-    <DashboardContainer containerStyle={{ paddintTop: $({ size: 32 }) }}>
+    <DashboardContainer
+      wrapperStyle={{
+        padding: {
+          xs: $({ size: 20 }),
+          md: $({ size: 48 }),
+        },
+        pr: {
+          xs: $({ size: 20 }),
+          md: $({ size: 48 }),
+        },
+        overflow: 'hidden',
+      }}
+      containerStyle={{
+        gap: {
+          xs: $({ size: 20 }),
+          md: $({ size: 16 }),
+        },
+      }}>
       <Box
         sx={{ display: 'flex', flexDirection: 'column', gap: $({ size: 8 }) }}>
-        <CustomBreadcrumbs
-          data={[
-            { path: ROUTES.PARENT.LEARN_SUBJECT.INDEX, title: 'Home' },
-            {
-              path: ROUTES.PARENT.LEARN_SUBJECT.DETAIL,
-              title: state?.title || 'N/A',
-            },
-          ]}
-        />
+        <Box
+          sx={{
+            mt: `-${$({ size: 12 })}`,
+            ml: `-${$({ size: 4 })}`,
+          }}>
+          <CustomBreadcrumbs
+            data={[
+              { path: ROUTES.PARENT.LEARN_SUBJECT.INDEX, title: 'Home' },
+              {
+                path: ROUTES.PARENT.LEARN_SUBJECT.DETAIL,
+                title: subject?.subjectName || 'N/A',
+              },
+            ]}
+          />
+        </Box>
 
         <Box
           sx={{
@@ -76,13 +101,15 @@ const LearnSubjectTopic = () => {
               xs: $({ size: 24 }),
               sm: $({ size: 16 }),
             },
+            mt: `-${$({ size: 6 })}`,
           }}>
           <Box
             sx={{
               display: 'flex',
               flexDirection: 'row',
               alignItems: 'center',
-              gap: $({ size: 16 }),
+              gap: $({ size: 20 }),
+              mt: `-${$({ size: 2 })}`,
             }}>
             <Box
               onClick={() => navigate(ROUTES.PARENT.LEARN_SUBJECT.INDEX)}
@@ -113,7 +140,7 @@ const LearnSubjectTopic = () => {
                   lineHeight: $({ size: 40 }),
                   color: colors.greenAccent[500],
                   display: 'inline',
-                }}>{` ${state?.title || 'N/A'} `}</Typography>
+                }}>{` ${subject?.subjectName || 'N/A'} `}</Typography>
               <Typography
                 sx={{
                   fontSize: $({ size: 31.98 }),
@@ -138,7 +165,8 @@ const LearnSubjectTopic = () => {
               },
               minWidth: {
                 xs: '100%',
-                sm: $({ size: 300 }),
+                sm: $({ size: 352 }),
+                mt: `-${$({ size: 2 })}`,
               },
             }}
             handleSearch={handleSearch}
@@ -164,13 +192,14 @@ const LearnSubjectTopic = () => {
         sx={{
           display: 'grid',
           gridTemplateColumns: `repeat(auto-fill, minmax(${$({
-            size: 160,
+            size: 150,
           })}, 1fr))`,
           gridGap: {
             xs: $({ size: 24 }),
             md: $({ size: 40 }),
           },
           gridAutoRows: '1fr', // to make all the rows the same height
+          mt: $({ size: 24 }),
         }}>
         {subjectDetailData.map((subjectDetail, index) => {
           return (
@@ -179,7 +208,7 @@ const LearnSubjectTopic = () => {
               onClick={() => {
                 setSelection({
                   ...subjectDetail,
-                  subject: { ...state },
+                  subject: { ...subject },
                 });
               }}
               sx={{
@@ -191,12 +220,14 @@ const LearnSubjectTopic = () => {
                 )}`,
                 backgroundColor:
                   selection.id === subjectDetail.id
-                    ? DarkenHexColor({ hex: state?.color })
-                    : state?.color,
+                    ? DarkenHexColor({ hex: subject?.color })
+                    : subject?.color,
                 gap: $({ size: 8 }),
                 display: 'flex',
                 flexDirection: 'column',
                 cursor: 'pointer',
+                width: $({ size: 160 }),
+                height: $({ size: 160 }),
               }}>
               <Box
                 sx={{
@@ -217,7 +248,7 @@ const LearnSubjectTopic = () => {
                   }}>
                   <img
                     src={ASSETS.PARENT.ICONS.DAILY_QUIZ}
-                    alt={subjectDetail.title}
+                    alt={subjectDetail.courseName}
                     style={{
                       width: '100%',
                       height: '100%',
@@ -229,10 +260,10 @@ const LearnSubjectTopic = () => {
                 sx={{
                   fontSize: $({ size: 18 }),
                   fontWeight: '500',
-                  lineHeight: $({ size: 30 }),
+                  lineHeight: $({ size: 25 }),
                   color: colors.solids.black,
                 }}>
-                {subjectDetail.title}
+                {subjectDetail.courseName}
               </Typography>
             </Box>
           );

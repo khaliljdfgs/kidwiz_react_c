@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Grid, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
+
+// import { useAppContext } from '../../../context/appContext';
 
 import { CustomButton } from '../../../components';
 
@@ -12,8 +14,9 @@ import { ROUTES } from '../../../config/routes';
 import { tokens } from '../../../theme';
 import { $ } from '../../../utils';
 
-import AddChildModal from './AddChildModal';
-import ChildInfoCard from './ChildInfoCard';
+// import AddChildModal from './AddChildModal';
+// import ChildInfoCard from './ChildInfoCard';
+import ChildrenHorzontalCardList from './ChildrenHorzontalCardList';
 
 const AddChildrenScreen = () => {
   const theme = useTheme();
@@ -21,16 +24,28 @@ const AddChildrenScreen = () => {
 
   const navigate = useNavigate();
 
-  const [childrenData, setChildrenData] = React.useState([
-    { hasInfo: false, disabled: false },
-    { hasInfo: false, disabled: false },
-    { hasInfo: false, disabled: true },
-  ]);
+  // const {user, users_children, getAllChilds, childrenLoading, deleteChild, isLoading} = useAppContext();
 
-  const [isModalOpen, setIsModalOpen] = React.useState({
-    isOpen: false,
-    index: -1,
-  });
+// console.log(children);
+  // const [childrenData, setChildrenData] = useState([
+  //   { hasInfo: false, disabled: false },
+  //   { hasInfo: false, disabled: false },
+  //   { hasInfo: false, disabled: true },
+  // ]);
+
+  // const [isModalOpen, setIsModalOpen] = useState({
+  //   isOpen: false,
+  //   mode: "create",
+  //   index: -1,
+  // });
+
+
+  // useEffect(() => {
+  //   if(isLoading === false)
+  //     getAllChilds();
+  // }, [isLoading])
+  
+
 
   return (
     <Box
@@ -133,6 +148,25 @@ const AddChildrenScreen = () => {
             </Typography>
           </Box>
 
+          {/* { childrenLoading 
+                && 
+                <Box>
+                  <Typography
+                    sx={{
+                      fontSize: $({ size: 32 }),
+                      fontWeight: '600',
+                      lineHeight: $({ size: 40 }),
+                      textAlign: 'center',
+                      color: colors.grey[200],
+                      margin: `${$({ size: 24 })} 0`,
+                      
+                    }}
+                    >
+                    Loading
+                  </Typography>
+                </Box> 
+            }
+
           <Grid
             container
             sx={{
@@ -144,9 +178,14 @@ const AddChildrenScreen = () => {
               maxWidth: '100%',
               rowGap: $({ size: 24 }),
             }}>
-            {childrenData.map((child, index) => {
-              return (
-                <Grid
+              { (childrenLoading && <Box></Box>)
+              
+                ||
+
+              (users_children.map((child,index)=>{
+                // console.log("child index -- >" + index);
+                return(
+                  <Grid
                   item
                   xs={12}
                   md={6}
@@ -155,30 +194,33 @@ const AddChildrenScreen = () => {
                   <ChildInfoCard
                     fullname={child.fullname}
                     age={child.age}
-                    gender={child.gender?.label}
-                    difficulty={child.difficulty?.label}
-                    profilePicture={child?.profilePicture?.src}
-                    hasInfo={child.hasInfo}
-                    disabled={child.disabled}
+                    gender={child.gender}
+                    difficulty={child.difficulty}
+                    profilePicture={  child.img }
+                    hasInfo={
+                      !(Object.keys(child).length === 0 && child.constructor === Object) && !child.disabled }
+                    disabled={ (index === 2 && user.tier !== "premium") || child.disabled }
                     handleAddChild={() => {
-                      setIsModalOpen({ isOpen: true, index: index });
+                      setIsModalOpen({ isOpen: true, mode:"create", index: index });
                     }}
                     handleEditChild={() => {
-                      setIsModalOpen({ isOpen: true, index: index });
+                      setIsModalOpen({ isOpen: true,mode:"update", index: index });
                     }}
                     handleDeleteChild={() => {
-                      const newChildrenData = [...childrenData];
-                      newChildrenData[index] = {
-                        hasInfo: false,
-                        disabled: false,
-                      };
-                      setChildrenData(newChildrenData);
+                      
+                      deleteChild(child.id);
+                      child.disabled = true;
+                      // console.log("here");
                     }}
                   />
                 </Grid>
-              );
-            })}
-          </Grid>
+                )
+              }))}
+            
+          </Grid> */}
+          <ChildrenHorzontalCardList />
+
+
         </Box>
 
         <CustomButton
@@ -198,15 +240,13 @@ const AddChildrenScreen = () => {
         />
       </Box>
 
-      {isModalOpen.isOpen && (
+      {/* {isModalOpen.isOpen && (
         <AddChildModal
-          currentChildData={childrenData[isModalOpen.index]}
-          childrenData={childrenData}
-          setChildrenData={setChildrenData}
+          currentChildData={users_children[isModalOpen.index]}
           isModalOpen={isModalOpen}
           setIsModalOpen={setIsModalOpen}
         />
-      )}
+      )} */}
     </Box>
   );
 };

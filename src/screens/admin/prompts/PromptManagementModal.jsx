@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { GET_ALL_TIERS, PROMPTS } from '../../../config/backend_endpoints';
+
 import { Box, Grid, Typography, useTheme, alpha } from '@mui/material';
-import { SortableContainer, SortableElement } from 'react-sortable-hoc';
-import { arrayMoveImmutable } from 'array-move';
+// import { SortableContainer, SortableElement } from 'react-sortable-hoc';
+import { ReactSortable } from "react-sortablejs";
+// import { arrayMoveImmutable } from 'array-move';
 
 import {
   CustomButton,
@@ -21,12 +25,15 @@ import {
 import { tokens } from '../../../theme';
 import { $ } from '../../../utils';
 
-const SortablePromptItem = SortableElement((props) => {
-  const { prompt, prompts, setPrompts, currentIndex, colors } = props;
+import { useAppContext } from '../../../context/appContext';
+
+const SortableItem = (props) => {
+  const { prompt, prompts, setPrompts, currentIndex, deletedSelectedIndex, colors } = props;
 
   return (
     <Box
       sx={{
+        mt: '10px',
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
@@ -67,10 +74,13 @@ const SortablePromptItem = SortableElement((props) => {
       <Box
         sx={{ cursor: 'pointer' }}
         onClick={() => {
-          setPrompts([
-            ...prompts.slice(0, currentIndex),
-            ...prompts.slice(currentIndex + 1),
-          ]);
+          deletedSelectedIndex(currentIndex);
+          // let array = [
+          //   ...prompts.slice(0, currentIndex),
+          //   ...prompts.slice(currentIndex + 1),
+          // ]
+          // setPrompts(array);
+          // updatePromptByPromptsList();
         }}>
         <CrossIcon
           size={$({ size: 16, numeric: true })}
@@ -79,9 +89,9 @@ const SortablePromptItem = SortableElement((props) => {
       </Box>
     </Box>
   );
-});
+}
 
-const SortablePromptContainer = SortableContainer(({ children, colors }) => {
+const SortablePromptContainer = ({ children, colors }) => {
   return (
     <Grid
       item
@@ -105,12 +115,12 @@ const SortablePromptContainer = SortableContainer(({ children, colors }) => {
         },
         'display': 'flex',
         'flexDirection': 'column',
-        'gap': $({ size: 8 }),
+        'gap': $({ size: 10 }),
       }}>
       {children}
     </Grid>
   );
-});
+};
 
 const PromptManagementModal = ({
   isModalOpen = { isOpen: false, index: -1 },
@@ -129,8 +139,33 @@ const PromptManagementModal = ({
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  const { token, logoutUser } = useAppContext();
+  const authorizedAxios = axios.create({
+    baseURL: '',
+    // timeout: 3000,
+    headers: {
+      "Authorization" : `Bearer ${token}`,
+      'Content-Type': 'multipart/form-data'
+  }
+  });
+
+  // Add a response interceptor
+  authorizedAxios.interceptors.response.use(function (response) {
+    // Any status code that lie within the range of 2xx cause this function to trigger
+    // Do something with response data
+    return response;
+  }, function (error) {
+    if (error.response.status === 401) {
+      logoutUser();
+    }
+    // Any status codes that falls outside the range of 2xx cause this function to trigger
+    // Do something with response error
+    return Promise.reject(error);
+  });
+
+
   const [promptType, setPromptType] = React.useState(
-    initialPrompt || currentSelectedPrompt?.type || 'foundational'
+    currentSelectedPrompt?.category || 'foundational'
   );
 
   const [promptTitle, setPromptTitle] = React.useState(
@@ -146,28 +181,95 @@ const PromptManagementModal = ({
   );
 
   const [scoring, setScoring] = React.useState(
-    currentSelectedPrompt?.scoring || false
+    currentSelectedPrompt?.activeScoring || false
   );
 
-  const [prompts, setPrompts] = React.useState(
-    currentSelectedPrompt?.prompts || [
-      'Prompt example 1',
-      'Prompt example 2',
-      'Prompt example 3',
-      'Prompt example 4',
-      'Prompt example 5',
-      'Prompt example 6',
-    ]
-  );
+  let promptsOnLoad = [];
+  if (isModalOpen.mode === 'update') {
+    promptsOnLoad = currentSelectedPrompt.prompts.split(",").map((item, index)=>{
+      return {id: index, name: item};
+    });
+  }
+  const [prompts, setPrompts] = React.useState(promptsOnLoad);
 
-  const [prompt, setPrompt] = React.useState('');
+  const [prompt, setPrompt] = React.useState(
+    currentSelectedPrompt?.prompts || ''
+    );
 
+  const deletedSelectedIndex = (index)=>{
+    let tempArray = [
+      ...prompts.slice(0, index),
+      ...prompts.slice(index + 1),
+    ];
+    // console.log("temp array --" + JSON.stringify(tempArray));
+    setPrompts(tempArray);
+    // console.log("There");
+    // console.log(prompts);
+    let tempArray2 = tempArray.map((item)=>{return item.name});
+              tempArray2 = tempArray2.join(",");
+    setPrompt(tempArray2);
+  }
+
+  const [tierData, setTierData] = useState([]);
   const [tier, setTier] = React.useState({
-    label: currentSelectedPrompt?.tier || '',
-    value: currentSelectedPrompt?.tier.toLowerCase() || '',
+    id: currentSelectedPrompt?.tier?.id || '',
+    name: currentSelectedPrompt?.tier.toLowerCase() || '',
   });
 
   const [tierDropDownOpen, setTierDropDownOpen] = React.useState(false);
+
+  const [errorsPrompt, setErrorsPrompt] = useState({
+    title: '',
+    buttonLabel: '',
+    buttonId: '',
+    tier: '',
+    prompt: '',
+  });
+  const ValidateInput = () => {
+    console.log(promptType);
+    let _errors = { ...errorsPrompt };
+    if (promptTitle === '') {
+      _errors.title = 'Required';
+    }else _errors.title = '';
+    if (promptType === 'chat-command' || promptType === 'buttons') {
+      if (buttonLabel === '') {
+        _errors.buttonLabel = 'Required';
+      }else _errors.buttonLabel = '';
+    }
+    if (promptType === 'buttons') {
+      if (buttonId === '') {
+        _errors.buttonId = 'Required';
+      }else _errors.buttonId = '';  
+    }
+    
+    if (prompt === '') {
+      _errors.prompt = 'Required';
+    }else _errors.prompt = '';
+    if (tier.name === '') {
+      _errors.tier = 'Required';
+    }else _errors.tier = '';
+
+    setErrorsPrompt(_errors);
+    for (const key in _errors) if (_errors[key]) return false;
+    return true;
+  }
+
+
+  const [promptUploadRequest, setPromptUploadRequest] = useState({
+    loading: false,
+    status: "",
+    error: "",
+  });
+
+  useEffect(()=>{
+    if (tierData.length === 0) {
+      loadTiers(authorizedAxios,setTierData);
+    }
+    if (!promptUploadRequest.loading && promptUploadRequest.status === "complete" && promptUploadRequest.error === "") {
+      setIsModalOpen({ isOpen: false, index: -1, mode: 'create' });
+      setCurrentSelectedPrompt(null);
+    }
+  },[promptUploadRequest]);
 
   return (
     <CustomModal
@@ -247,6 +349,20 @@ const PromptManagementModal = ({
         })}
       </Box>
 
+              <Typography
+                sx={{
+                  fontSize: $({ size: 16 }),
+                  fontWeight: '400',
+                  color: colors.redAccent[500],
+                  lineHeight: $({ size: 30 }),
+                  paddingTop: $({ size: 4 }),
+                  
+                }}>
+                {promptUploadRequest.error}
+              </Typography>
+
+
+
       <Grid
         container
         rowGap={$({ size: 16 })}
@@ -260,6 +376,7 @@ const PromptManagementModal = ({
             placeholder='Prompt title'
             value={promptTitle}
             onChange={(e) => setPromptTitle(e.target.value)}
+            error={errorsPrompt.title}
           />
         </Grid>
         <Grid
@@ -276,6 +393,7 @@ const PromptManagementModal = ({
               placeholder='Title'
               value={buttonLabel}
               onChange={(e) => setButtonLabel(e.target.value)}
+              error={errorsPrompt.buttonLabel}
             />
           </Grid>
         )}
@@ -290,6 +408,7 @@ const PromptManagementModal = ({
                 placeholder='e.g. 546'
                 value={buttonId}
                 onChange={(e) => setButtonId(e.target.value)}
+                error={errorsPrompt.buttonId}
               />
             </Grid>
             <Grid
@@ -303,16 +422,13 @@ const PromptManagementModal = ({
           xs={12}
           md={5.7}>
           <CustomDropDown
-            value={tier?.label || ''}
+            value={tier?.name || ''}
             placeholder='Choose a tier'
             label='Tier'
+            error={errorsPrompt.tier}
             dropDownOpen={tierDropDownOpen}
             setDropDownOpen={setTierDropDownOpen}
-            data={[
-              { label: 'Basic', value: 'basic' },
-              { label: 'Premium', value: 'premium' },
-              { label: 'Pro', value: 'pro' },
-            ].map((item) => {
+            data={tierData.map((item) => {
               return {
                 onClick: () => {
                   setTier(item);
@@ -321,11 +437,11 @@ const PromptManagementModal = ({
                   <Typography
                     sx={{
                       fontSize: $({ size: 18 }),
-                      fontWeight: tier.value === item.value ? '600' : '400',
+                      fontWeight: tier.name === item.name ? '600' : '400',
                       color: colors.extra.grey1,
                       lineHeight: $({ size: 30 }),
                     }}>
-                    {item.label}
+                    {item.name}
                   </Typography>
                 ),
               };
@@ -352,6 +468,7 @@ const PromptManagementModal = ({
             label='Prompts'
             placeholder='Separate prompts by a comma e.g. Prompt example 1, prompt example 2, prompt example 3, ...'
             value={prompt}
+            error={errorsPrompt.prompt}
             onChange={(e) => setPrompt(e.target.value)}
             multiline={true}
             containerStyle={{
@@ -379,8 +496,12 @@ const PromptManagementModal = ({
           <Box
             onClick={() => {
               if (prompt) {
-                setPrompts([prompt, ...prompts]);
-                setPrompt('');
+                let tempArray = prompt.split(",");
+                let promptsArray = tempArray.map((item, index)=>{return {id:index, name:item}});
+                
+                  setPrompts(promptsArray);
+                
+                // setPrompt('');
               }
             }}
             sx={{
@@ -397,7 +518,7 @@ const PromptManagementModal = ({
             />
           </Box>
         </Grid>
-        <SortablePromptContainer
+        {/* <SortablePromptContainer
           colors={colors}
           // distance={1}
           pressDelay={120}
@@ -417,7 +538,60 @@ const PromptManagementModal = ({
               />
             );
           })}
+        </SortablePromptContainer> */}
+
+        <SortablePromptContainer colors={colors}>
+          <ReactSortable 
+            list={prompts} 
+            setList={(newState) => {
+              
+
+              if (prompts.length === newState.length) {
+                let flag = true;
+                for (let index = 0; index < prompts.length; index++) {
+                  if (prompts[index].name !== newState[index].name) {
+                    flag = flag && false;
+                    break;
+                  } 
+                }
+                if (flag) {
+                  return;
+                }
+              }
+
+
+              console.log(newState);
+                setPrompts(newState);
+                let tempArray = newState.map((item)=>{return item.name});
+                tempArray = tempArray.join(",");
+                setPrompt(tempArray);
+                // this.setState({ list: newState })
+                // updatePromptByPromptsList();
+              
+            }}
+            
+            >
+            {prompts.map((item, index) => (
+              // <Box >
+                <SortableItem 
+                  key={item.id} 
+                  prompt={item.name} 
+                  colors={colors}
+                  prompts= {prompts}
+                  setPrompts={setPrompts} 
+                  currentIndex= {index}
+                  deletedSelectedIndex={deletedSelectedIndex}
+                >
+
+                </SortableItem>
+                
+              // </Box>
+            ))}
+          </ReactSortable>
         </SortablePromptContainer>
+
+  
+
       </Grid>
 
       {promptType === 'buttons' && (
@@ -469,6 +643,8 @@ const PromptManagementModal = ({
         />
         <CustomButton
           label='Save'
+          disabled = {promptUploadRequest.loading}
+          loading= {promptUploadRequest.loading}
           sx={{
             maxWidth: $({ size: 160 }),
             boxShadow: `0 0 ${$({ size: 4 })} 0 ${alpha(
@@ -478,40 +654,66 @@ const PromptManagementModal = ({
           }}
           rightIcon={<SaveIcon size={$({ size: 24, numeric: true })} />}
           onClick={() => {
-            setPromptsData([
-              ...(currentSelectedPrompt?.id
-                ? []
-                : [
-                    {
-                      id: `${promptType}-${promptsData.length + 1}`,
-                      title: promptTitle,
-                      tier: tier.label,
-                      type: promptType,
-                      buttonLabel: buttonLabel,
-                      buttonId: buttonId,
-                      scoring: scoring,
-                      prompts: prompts,
-                    },
-                  ]),
-              ...promptsData.map((prompt) => {
-                if (prompt?.id === currentSelectedPrompt?.id) {
-                  return {
-                    ...prompt,
-                    title: promptTitle,
-                    tier: tier.label,
-                    type: promptType,
-                    buttonLabel: buttonLabel,
-                    buttonId: buttonId,
-                    scoring: scoring,
-                    prompts: prompts,
-                  };
-                }
-                return prompt;
-              }),
-            ]);
+            
+            if (!ValidateInput()) {
+              return;
+            }
 
-            setIsModalOpen({ isOpen: false, index: -1 });
-            setCurrentSelectedPrompt(null);
+            if (isModalOpen.mode === "create") {
+
+              let tempPrompt = {};
+              tempPrompt.title = promptTitle;
+              tempPrompt.tier = tier.name;
+              tempPrompt.prompts = prompt;
+              tempPrompt.buttonLabel = '';
+              if (promptType === 'chat-command' || promptType === 'buttons'){
+                tempPrompt.buttonLabel = buttonLabel;
+              }
+              tempPrompt.buttonId = '';
+              tempPrompt.activeScoring = false;
+              if(promptType === 'buttons'){
+                tempPrompt.buttonId = buttonId;
+                tempPrompt.activeScoring = scoring;
+              }
+              tempPrompt.category = promptType;
+            
+              // console.log("Here --  " + JSON.stringify(tempPrompt));
+            saveNewPrompt(authorizedAxios, tempPrompt, setPromptUploadRequest);
+              
+            }else if (isModalOpen.mode === 'update') {
+              let tempPrompt = {id: currentSelectedPrompt.id};
+              if (promptTitle !== currentSelectedPrompt.title) {
+                tempPrompt.title = promptTitle;
+              }
+              if (tier.name.toLowerCase() !== currentSelectedPrompt.tier.toLowerCase()) {
+                tempPrompt.tier = tier.name;
+              }
+              if (prompt !== currentSelectedPrompt.prompts) {
+                tempPrompt.prompts = prompt;
+              }
+              // tempPrompt.buttonLabel = currentSelectedPrompt.buttonLabel;
+              if (promptType === 'chat-command' || promptType === 'buttons'){
+                if (buttonLabel !== currentSelectedPrompt.buttonLabel) {
+                  tempPrompt.buttonLabel = buttonLabel;
+                }
+              }
+              // tempPrompt.buttonId = currentSelectedPrompt.buttonId;
+              // tempPrompt.activeScoring = currentSelectedPrompt.activeScoring;
+              if(promptType === 'buttons'){
+                if (buttonId !== currentSelectedPrompt.buttonId) {
+                  tempPrompt.buttonId = buttonId;
+                }
+                if (scoring !== currentSelectedPrompt.activeScoring) {
+                  tempPrompt.activeScoring = scoring;
+                }
+              }
+              if (promptType !== currentSelectedPrompt.category) {
+                tempPrompt.category = promptType;
+              }
+              updatePrompt(authorizedAxios, tempPrompt, setPromptUploadRequest);
+            }
+            
+            
           }}
         />
       </Box>
@@ -520,3 +722,70 @@ const PromptManagementModal = ({
 };
 
 export default PromptManagementModal;
+
+
+const loadTiers = async (authorizedAxios, setTierData)=>{
+  try {
+    const response = await authorizedAxios.get(GET_ALL_TIERS);
+    // console.log(response);
+    setTierData(response.data);
+    // console.log("Done");
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+const saveNewPrompt = async (authorizedAxios, promptData, setPromptUploadRequest)=>{
+  setPromptUploadRequest({
+    loading: true,
+    status: "start",
+    error: "",
+  });
+  try {
+    const response = await authorizedAxios.post(PROMPTS.SAVE, {
+                        ...promptData
+                      });
+    // console.log(response);
+    setPromptUploadRequest({
+      loading: false,
+      status: "complete",
+      error: "",
+    });
+    
+  } catch (error) {
+    console.error(error);
+    setPromptUploadRequest({
+      loading: false,
+      status: "complete",
+      error: error.message,
+    });
+  }
+}
+
+
+const updatePrompt = async (authorizedAxios, promptData, setPromptUploadRequest)=>{
+  setPromptUploadRequest({
+    loading: true,
+    status: "start",
+    error: "",
+  });
+  try {
+    const response = await authorizedAxios.patch(PROMPTS.UPDATE, {
+                        ...promptData
+                      });
+    // console.log(response);
+    setPromptUploadRequest({
+      loading: false,
+      status: "complete",
+      error: "",
+    });
+    
+  } catch (error) {
+    console.error(error);
+    setPromptUploadRequest({
+      loading: false,
+      status: "complete",
+      error: error.message,
+    });
+  }
+}

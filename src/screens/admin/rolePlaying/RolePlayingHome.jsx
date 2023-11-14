@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   useTheme,
@@ -8,6 +8,12 @@ import {
   AccordionDetails,
   alpha,
 } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
+
+import axios from 'axios';
+import { ROLE_PLAYING_DEFAULT_PROMPT, ROLE_PLAYING_TOPIC } from '../../../config/backend_endpoints';
+
+import { useAppContext } from '../../../context/appContext';
 
 import {
   DashboardContainer,
@@ -31,24 +37,53 @@ import { tokens } from '../../../theme';
 import { $ } from '../../../utils';
 
 import RolePlayingTopicManagementModal from './RolePlayingTopicManagementModal';
-import RolePlayingSubTopicManagementModal from './RolePlayingSubTopicManagementModal';
-import { RolePlayingTopicsData } from './data';
+// import RolePlayingSubTopicManagementModal from './RolePlayingSubTopicManagementModal';
+// import { RolePlayingTopicsData } from './data';
+let RolePlayingTopicsData = [];
 
 const RolePlayingHome = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  const {token, logoutUser} = useAppContext();
+
+  const authorizedAxios = axios.create({
+    baseURL: '',
+    // timeout: 3000,
+    headers: {
+      "Authorization" : `Bearer ${token}`,
+      'Content-Type': 'multipart/form-data'
+  }
+  });
+
+  // Add a response interceptor
+  authorizedAxios.interceptors.response.use(function (response) {
+    // Any status code that lie within the range of 2xx cause this function to trigger
+    // Do something with response data
+    return response;
+  }, function (error) {
+    if (error.response?.status === 401) {
+      logoutUser();
+    }
+    // Any status codes that falls outside the range of 2xx cause this function to trigger
+    // Do something with response error
+    return Promise.reject(error);
+  });
+
+
+
   const [isRolePlayingTopicModalOpen, setIsRolePlayingTopicModalOpen] =
     React.useState({
       isOpen: false,
       index: -1,
+      mode: 'create'
     });
 
-  const [isRolePlayingSubTopicModalOpen, setIsSubRolePlayingSubTopicModalOpen] =
-    React.useState({
-      isOpen: false,
-      index: -1,
-    });
+  // const [isRolePlayingSubTopicModalOpen, setIsSubRolePlayingSubTopicModalOpen] =
+  //   React.useState({
+  //     isOpen: false,
+  //     index: -1,
+  //   });
 
   const [isDeleteConfirmationModalOpen, setIsDeleteConfirmationModalOpen] =
     React.useState(false);
@@ -57,20 +92,24 @@ const RolePlayingHome = () => {
   const handleSearch = () => {};
 
   const [defaultPrompt, setDefaultPrompt] = React.useState('');
+  const [loadingDefaultPrompt, setLoadingDefaultPrompt] = useState(false);
 
   const [rolePlayingTopicsData, setRolePlayingTopicsData] = React.useState(
     RolePlayingTopicsData
   );
+  const [loadingAllRolePlayingTopics, setLoadingAllRolePlayingTopics] = useState(false);
 
+  
   const [currentSelectedRolePlayingTopic, setCurrentSelectedRolePlayingTopic] =
     React.useState(null);
 
-  const [rolePlayingSubTopics, setRolePlayingSubTopics] = React.useState([]);
+  const [loadingDeleteTopic, setLoadingDeleteTopic] = useState(false);
+  // const [rolePlayingSubTopics, setRolePlayingSubTopics] = React.useState([]);
 
-  const [
-    currentSelectedRolePlayingSubTopic,
-    setCurrentSelectedRolePlayingSubTopic,
-  ] = React.useState(null);
+  // const [
+  //   currentSelectedRolePlayingSubTopic,
+  //   setCurrentSelectedRolePlayingSubTopic,
+  // ] = React.useState(null);
 
   const [expandedRolePlayingTopic, setExpandedRolePlayingTopic] =
     React.useState('');
@@ -93,6 +132,22 @@ const RolePlayingHome = () => {
   React.useEffect(() => {
     setTopSectionHeight(topSectionRef.current?.offsetHeight || 0);
   }, [topSectionRef.current?.offsetHeight]);
+
+  useEffect(()=>{
+    if (!isRolePlayingTopicModalOpen.isOpen && !isDeleteConfirmationModalOpen.isOpen) {
+      
+      loadAllRolePlayingTopics(authorizedAxios, setLoadingAllRolePlayingTopics, setRolePlayingTopicsData);
+    }
+    if (loadingDeleteTopic) {
+      setIsDeleteConfirmationModalOpen(false);
+      setCurrentSelectedRolePlayingTopic(null);
+    }
+
+    if (defaultPrompt === '') {
+      getDefaultPrompt(authorizedAxios,setDefaultPrompt, setLoadingDefaultPrompt )
+    }
+
+  },[isRolePlayingTopicModalOpen , loadingDeleteTopic]);
 
   return (
     <DashboardContainer
@@ -162,7 +217,7 @@ const RolePlayingHome = () => {
 
           <Box
             onClick={() => {
-              setIsRolePlayingTopicModalOpen({ isOpen: true, index: -1 });
+              setIsRolePlayingTopicModalOpen({ isOpen: true, index: -1, mode: "create" });
             }}
             sx={{
               display: 'flex',
@@ -206,7 +261,9 @@ const RolePlayingHome = () => {
               }}>
               <CustomLabel label='Defualt Prompt' />
               <Box
-                onClick={() => {}}
+                onClick={() => {
+                  saveDefaultPrompt(authorizedAxios, defaultPrompt, setLoadingDefaultPrompt);
+                }}
                 sx={{
                   display: 'flex',
                   flexDirection: 'row',
@@ -233,6 +290,8 @@ const RolePlayingHome = () => {
               label={null}
               multiline={true}
               value={defaultPrompt}
+              disabled = { loadingDefaultPrompt }
+              showLoading = { loadingDefaultPrompt }
               onChange={(e) => setDefaultPrompt(e.target.value)}
               placeholder='Write the default prompt for all roleplaying topics unless overwritten'
               containerStyle={{
@@ -277,7 +336,42 @@ const RolePlayingHome = () => {
             backgroundColor: colors.extra.grey3,
             borderRadius: $({ size: 8 }),
           },
-        }}>
+        }}
+        >
+
+          {loadingAllRolePlayingTopics && 
+            <Box sx={{
+              minHeight:"100px",
+            }}>
+              <CircularProgress
+                size={50}
+                sx={{
+                  color: colors.solids.green,
+                  position: 'relative',
+                  top: '50%',
+                  left: '50%',
+                  // marginTop: '-12px',
+                  marginLeft: '-12px',
+                }}
+              />
+            </Box>
+            
+          }
+
+          {
+          (!loadingAllRolePlayingTopics && rolePlayingTopicsData.length === 0) && 
+            <Typography
+              sx={{
+                color: colors.extra.grey1,
+                fontSize: $({ size: 18 }),
+                fontWeight: '400',
+              }}>
+              No Role Playing Topic Exist...!
+            </Typography>
+          }
+
+
+
         {rolePlayingTopicsData.map((rolePlayingTopic, index) => {
           return (
             <Accordion
@@ -369,7 +463,7 @@ const RolePlayingHome = () => {
                         fontSize: $({ size: 18 }),
                         fontWeight: '600',
                       }}>
-                      {rolePlayingTopic.title}
+                      {rolePlayingTopic.topic_title}
                     </Typography>
 
                     <Box
@@ -410,6 +504,7 @@ const RolePlayingHome = () => {
                         setIsRolePlayingTopicModalOpen({
                           isOpen: true,
                           index: index,
+                          mode: "update",
                         });
                       }}
                       sx={{
@@ -458,7 +553,7 @@ const RolePlayingHome = () => {
                     fontWeight: '400',
                     color: colors.solids.black,
                   }}>
-                  {rolePlayingTopic.description}
+                  {rolePlayingTopic.desc}
                 </Typography>
 
                 <Box
@@ -488,7 +583,7 @@ const RolePlayingHome = () => {
                   </Typography>
                 </Box>
 
-                {rolePlayingTopic.subRolePlayingTopics.map(
+                { rolePlayingTopic.subroleplays.map(
                   (subRolePlayingTopic, index) => {
                     return (
                       <Accordion
@@ -572,7 +667,7 @@ const RolePlayingHome = () => {
                               fontWeight: '600',
                               marginLeft: $({ size: 16 }),
                             }}>
-                            {subRolePlayingTopic.title}
+                            {subRolePlayingTopic.topic_title}
                           </Typography>
                         </AccordionSummary>
                         <AccordionDetails
@@ -597,7 +692,7 @@ const RolePlayingHome = () => {
                               fontWeight: '400',
                               color: colors.solids.black,
                             }}>
-                            {subRolePlayingTopic.description}
+                            {subRolePlayingTopic.desc}
                           </Typography>
                           <Box
                             sx={{
@@ -644,23 +739,23 @@ const RolePlayingHome = () => {
           setCurrentSelectedRolePlayingTopic={
             setCurrentSelectedRolePlayingTopic
           }
-          setIsSubRolePlayingSubTopicModalOpen={
-            setIsSubRolePlayingSubTopicModalOpen
-          }
-          setCurrentSelectedRolePlayingSubTopic={
-            setCurrentSelectedRolePlayingSubTopic
-          }
-          setRolePlayingTopicsData={setRolePlayingTopicsData}
-          rolePlayingSubTopics={
-            rolePlayingSubTopics.length > 0
-              ? rolePlayingSubTopics
-              : currentSelectedRolePlayingTopic?.subRolePlayingTopics || []
-          }
-          setRolePlayingSubTopics={setRolePlayingSubTopics}
+          // setIsSubRolePlayingSubTopicModalOpen={
+          //   setIsSubRolePlayingSubTopicModalOpen
+          // }
+          // setCurrentSelectedRolePlayingSubTopic={
+          //   setCurrentSelectedRolePlayingSubTopic
+          // }
+          // setRolePlayingTopicsData={setRolePlayingTopicsData}
+          // rolePlayingSubTopics={
+          //   rolePlayingSubTopics.length > 0
+          //     ? rolePlayingSubTopics
+          //     : currentSelectedRolePlayingTopic?.subRolePlayingTopics || []
+          // }
+          // setRolePlayingSubTopics={setRolePlayingSubTopics}
         />
       )}
 
-      {isRolePlayingSubTopicModalOpen.isOpen && (
+      {/* {isRolePlayingSubTopicModalOpen.isOpen && (
         <RolePlayingSubTopicManagementModal
           isModalOpen={isRolePlayingSubTopicModalOpen}
           setIsModalOpen={setIsSubRolePlayingSubTopicModalOpen}
@@ -676,7 +771,7 @@ const RolePlayingHome = () => {
           }
           setRolePlayingSubTopics={setRolePlayingSubTopics}
         />
-      )}
+      )} */}
 
       {isDeleteConfirmationModalOpen && (
         <CustomModal
@@ -719,7 +814,7 @@ const RolePlayingHome = () => {
                 fontWeight: '600',
                 display: 'inline',
               }}>
-              {` ${currentSelectedRolePlayingTopic?.title}`}
+              {` ${currentSelectedRolePlayingTopic?.topic_title}`}
             </Typography>
             <Typography
               sx={{
@@ -731,6 +826,21 @@ const RolePlayingHome = () => {
               ?
             </Typography>
           </Box>
+
+          {
+            loadingDeleteTopic && 
+              <CircularProgress
+                      size={50}
+                      sx={{
+                        color: colors.solids.green,
+                        position: 'relative',
+                        top: '50%',
+                        left: '50%',
+                        // marginTop: '-12px',
+                        marginLeft: '-12px',
+                      }}
+                    />
+          }
           <Box sx={{ flex: 1 }} />
           <Box
             sx={{
@@ -760,18 +870,10 @@ const RolePlayingHome = () => {
                 },
               }}
               onClick={() => {
-                setIsDeleteConfirmationModalOpen(false);
 
-                const temp = [...rolePlayingTopicsData];
-                temp.splice(
-                  rolePlayingTopicsData.findIndex(
-                    (item) => item.id === currentSelectedRolePlayingTopic.id
-                  ),
-                  1
-                );
-                setRolePlayingTopicsData(temp);
+                deleteTopic(authorizedAxios, currentSelectedRolePlayingTopic, setLoadingDeleteTopic);
 
-                setCurrentSelectedRolePlayingTopic(null);
+                
               }}
             />
           </Box>
@@ -782,3 +884,66 @@ const RolePlayingHome = () => {
 };
 
 export default RolePlayingHome;
+
+
+const loadAllRolePlayingTopics = async (authorizedAxios, setLoadingAllRolePlayingTopics, setRolePlayingTopicsData)=> {
+  setLoadingAllRolePlayingTopics(true);
+  try {
+    const response = await authorizedAxios.get(ROLE_PLAYING_TOPIC.GET_ALL);
+    console.log(response.data);
+    RolePlayingTopicsData = response.data;
+    setRolePlayingTopicsData(RolePlayingTopicsData);
+  } catch (error) {
+    console.error(error);
+  }
+  setLoadingAllRolePlayingTopics(false);
+  
+}
+
+const deleteTopic = async (authorizedAxios, rolePlayingTopic, setLoadingDeleteTopic)=> {
+  setLoadingDeleteTopic(true);
+  // console.log("-- ID of Subject --" + subject.id);
+  try {
+    const response = await authorizedAxios.delete(ROLE_PLAYING_TOPIC.DELETE, {
+      data:{id : rolePlayingTopic.id}
+    });
+    console.log(response.data);
+    
+  } catch (error) {
+    console.error(error);
+  }
+  setLoadingDeleteTopic(false);
+  
+}
+
+const saveDefaultPrompt = async (authorizedAxios, defaultPrompt, setLoadingDefaultPrompt) => {
+  setLoadingDefaultPrompt(true);
+  try {
+    const response = await authorizedAxios.post(ROLE_PLAYING_DEFAULT_PROMPT.SAVE, {
+      defaultprompt : defaultPrompt,
+      category : "sub-roleplaying",
+      isActive : true
+    });
+    console.log(response.data);
+  } catch (error) {
+    console.error(error);
+  }
+  setLoadingDefaultPrompt(false);
+}
+
+const getDefaultPrompt = async (authorizedAxios, setDefaultPrompt, setLoadingDefaultPrompt) => {
+  setLoadingDefaultPrompt(true);
+  try {
+    const response = await authorizedAxios.get(ROLE_PLAYING_DEFAULT_PROMPT.GET);
+    console.log(response.data);
+    response.data.forEach(element => {
+      if (element.category === 'sub-roleplaying') {
+        setDefaultPrompt(element.defaultprompt);
+      }
+    });
+    // setDefaultPrompt(response.data);
+  } catch (error) {
+    console.error(error);
+  }
+  setLoadingDefaultPrompt(false);
+}

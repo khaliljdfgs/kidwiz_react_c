@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Grid, Typography, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Pie } from '@nivo/pie';
+
+import { useAppContext } from '../../../context/appContext'
 
 import {
   CustomButton,
@@ -19,65 +21,112 @@ import { $ } from '../../../utils';
 
 const AddChildModal = ({
   currentChildData = {},
-  childrenData = [],
-  setChildrenData = () => {},
-  isModalOpen = { isOpen: false, index: -1 },
+  isModalOpen = { isOpen: false, mode:"create", index: -1 },
   setIsModalOpen = () => {},
   offset = {},
 }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  const { createNewChild, updateChild, isLoading } = useAppContext();
+
   const [fullname, setFullname] = React.useState(
     currentChildData.fullname || ''
   );
   const [age, setAge] = React.useState(currentChildData.age || '');
-  const [profilePicture, setProfilePicture] = React.useState(
-    currentChildData.profilePicture || null
-  );
-  const [gender, setGender] = React.useState(currentChildData.gender || '');
-  const [difficulty, setDifficulty] = React.useState(
-    currentChildData.difficulty || ''
-  );
+  
+  let nameOfProfilePicture = '';
+  if (isModalOpen.mode === "update") {
+    const listOfString =  currentChildData.img.split("/");
+    nameOfProfilePicture = listOfString[listOfString.length - 1];
+  }
+ const [pictureChanged, setPictureChanged]  =  useState(false);
+  const [profilePicture, setProfilePicture] = useState( isModalOpen.mode === "update"?  {name:nameOfProfilePicture} : null);
+  // React.useState(
+  //   currentChildData.profilePicture || null
+  // );
+
+  // const handleFileChange = (event) => {
+  //   const file = event.target.files[0];
+  //   this.setState({ profilePicture: file });
+  //   setProfilePicture(file);
+  //   console.log(file);
+  //   console.log(JSON.stringify(profilePicture));
+  // }
+
+  const genderOptions = [
+    { label: 'Male', value: 'male' },
+    { label: 'Female', value: 'female' },
+    { label: 'Oher', value: 'other' },
+  ];
+  
+  const [gender, setGender] = React.useState( isModalOpen.mode === "update" ? genderOptions.filter((item)=>{
+        return item.value === currentChildData.gender
+    })[0] : '' );
+
+const difficultyOptions = [
+{ label: 'Easy', value: 'easy' },
+{ label: 'Medium', value: 'medium' },
+{ label: 'Hard', value: 'hard' },
+{ label: 'Very Hard', value: 'very-hard' },
+]
+  
+
+  const [difficulty, setDifficulty] = React.useState( isModalOpen.mode === "update" ? difficultyOptions.filter((item)=>{
+    return item.value === currentChildData.difficulty
+  })[0] : '' );
 
   const [genderDropDownOpen, setGenderDropDownOpen] = React.useState(false);
   const [difficultyDropDownOpen, setDifficultyDropDownOpen] =
     React.useState(false);
 
-  const [subjectFocusGraphData, setSubjectFocusGraphData] = React.useState(
-    currentChildData.subjectFocusGraphData || [
-      {
-        id: '1',
-        label: 'Science, biology, & Environment',
-        color: colors.subjectsFocus[100],
-        value: Math.floor(Math.random() * 100),
-      },
-      {
-        id: '2',
-        label: 'Social Study & Languages',
-        color: colors.subjectsFocus[200],
-        value: Math.floor(Math.random() * 100),
-      },
-      {
-        id: '3',
-        label: 'English & Coding',
-        color: colors.subjectsFocus[300],
-        value: Math.floor(Math.random() * 100),
-      },
-      {
-        id: '4',
-        label: 'Logic, Life Skills, Emotions, & Innovation',
-        color: colors.subjectsFocus[400],
-        value: Math.floor(Math.random() * 100),
-      },
-      {
-        id: '5',
-        label: 'Math, Money, & Music',
-        color: colors.subjectsFocus[500],
-        value: Math.floor(Math.random() * 100),
-      },
-    ]
+  const subjectFocusDefaultValue = [
+    {
+      id: '1',
+      label: 'Science, biology, & Environment',
+      color: colors.subjectsFocus[100],
+      value: Math.floor(Math.random() * 100),
+    },
+    {
+      id: '2',
+      label: 'Social Study & Languages',
+      color: colors.subjectsFocus[200],
+      value: Math.floor(Math.random() * 100),
+    },
+    {
+      id: '3',
+      label: 'English & Coding',
+      color: colors.subjectsFocus[300],
+      value: Math.floor(Math.random() * 100),
+    },
+    {
+      id: '4',
+      label: 'Logic, Life Skills, Emotions, & Innovation',
+      color: colors.subjectsFocus[400],
+      value: Math.floor(Math.random() * 100),
+    },
+    {
+      id: '5',
+      label: 'Math, Money, & Music',
+      color: colors.subjectsFocus[500],
+      value: Math.floor(Math.random() * 100),
+    },
+  ];
+  // console.log(JSON.parse(currentChildData.subjectFocusGraphData));
+  // console.log(JSON.parse(currentChildData.subjectFocusGraphData));
+let childFocusClone = [];
+if (isModalOpen.mode === "update") {
+  for (let index = 0; index < currentChildData.childfocus.length; index++) {
+    const element = {...currentChildData.childfocus[index]};
+    childFocusClone[index] = element;
+  }
+}
+
+  const [subjectFocusGraphData, setSubjectFocusGraphData] = React.useState( isModalOpen.mode === "update" ?
+  childFocusClone : subjectFocusDefaultValue
   );
+  // console.log(subjectFocusGraphData);
+  const [requestToCloseModel, setRequestToCloseModel] = useState(false);
 
   const [errors, setErrors] = React.useState({
     fullname: '',
@@ -117,11 +166,29 @@ const AddChildModal = ({
     return true;
   };
 
+
+  useEffect(()=>{
+    if (requestToCloseModel === true && isLoading === false) {
+
+      //load default for closing model
+      setIsModalOpen({ isOpen: false, index: -1 });
+      setFullname('');
+      setAge('');
+      setProfilePicture(null);
+      setPictureChanged(false);
+      setGender('');
+      setDifficulty('');
+      setSubjectFocusGraphData(subjectFocusDefaultValue);
+      setRequestToCloseModel(false);
+      
+    }
+  }, [isLoading]);
+
   return (
     <CustomModal
       showBackdrop={true}
-      title='New Child'
-      onClose={() => setIsModalOpen({ isOpen: false, index: -1 })}
+      title={isModalOpen.mode === "create" ? "Create Child" : "Update Child"}
+      onClose={() => setIsModalOpen({ isOpen: false,model:"create", index: -1 })}
       offset={offset}
       containerStyle={{
         maxWidth: $({ size: 1040 }),
@@ -134,7 +201,10 @@ const AddChildModal = ({
         transform: 'translateX(-50%)',
         width: $({ size: 1040 }),
       }}>
-      {(genderDropDownOpen || difficultyDropDownOpen) && (
+
+
+
+      {  (genderDropDownOpen || difficultyDropDownOpen) && (
         <Box
           onClick={() => {
             setGenderDropDownOpen(false);
@@ -188,13 +258,24 @@ const AddChildModal = ({
           <CustomFileUploader
             label='Profile Picture'
             placeholder={
-              profilePicture?.file
-                ? profilePicture?.file?.name
+              profilePicture
+                ? profilePicture?.name
                 : 'Upload picture'
             }
-            onClick={(file) => setProfilePicture(file)}
+            onClick={(file) => 
+              {
+                // console.log(file);
+                setPictureChanged(true);
+                setProfilePicture(file.file);
+                // console.log(JSON.stringify(profilePicture));
+              }
+            }
             error={errors.profilePicture}
           />
+
+
+          
+
         </Grid>
         <Grid
           item
@@ -206,11 +287,7 @@ const AddChildModal = ({
             label='Gender'
             dropDownOpen={genderDropDownOpen}
             setDropDownOpen={setGenderDropDownOpen}
-            data={[
-              { label: 'Male', value: 'male' },
-              { label: 'Female', value: 'female' },
-              { label: 'Oher', value: 'other' },
-            ].map((item) => {
+            data={genderOptions.map((item) => {
               return {
                 onClick: () => {
                   setGender(item);
@@ -241,12 +318,7 @@ const AddChildModal = ({
             label='Difficulty'
             dropDownOpen={difficultyDropDownOpen}
             setDropDownOpen={setDifficultyDropDownOpen}
-            data={[
-              { label: 'Easy', value: 'easy' },
-              { label: 'Medium', value: 'medium' },
-              { label: 'Hard', value: 'hard' },
-              { label: 'Very Hard', value: 'very-hard' },
-            ].map((item) => {
+            data={difficultyOptions.map((item) => {
               return {
                 onClick: () => {
                   setDifficulty(item);
@@ -404,7 +476,8 @@ const AddChildModal = ({
           }}
         />
         <CustomButton
-          label='Save'
+          label={isLoading ? 'Saving' : 'Save'}
+          disabled = {isLoading}
           sx={{
             maxWidth: $({ size: 160 }),
             boxShadow: `0 0 ${$({ size: 4 })} 0 ${alpha(
@@ -422,61 +495,69 @@ const AddChildModal = ({
               difficulty,
             });
 
-            if (!isValid) return;
+            // if (!isValid) return;
 
-            setIsModalOpen({ isOpen: false, index: -1 });
+            // console.log(profilePicture);
+    //         const formData = new FormData();
+    // formData.append('name', fullname);
+    // formData.append('age', age);
+    // formData.append('profilePicture', profilePicture);
+// console.log(formData);
 
-            const newData = [...childrenData];
-            newData[isModalOpen.index] = {
-              hasInfo: true,
-              disabled: false,
-              fullname: fullname,
-              age: age,
-              profilePicture: profilePicture,
-              gender: gender,
-              difficulty: difficulty,
-              subjectFocusGraphData: subjectFocusGraphData,
-            };
+            const child= {"fullname": fullname,"age":age,"gender":gender.value,"img":profilePicture, difficulty:difficulty.value , childfocus:JSON.stringify(subjectFocusGraphData)}
+            // console.log(JSON.stringify(child) );
+            // return;
+            if (isModalOpen.mode === "create") {
+              createNewChild(child, profilePicture);
+              setRequestToCloseModel(true);  
+            }else{
+              let child = {id:currentChildData.id}
+              if (currentChildData.fullname !== fullname) {
+                child = {...child, "fullname": fullname}
+              }
+              if (currentChildData.age !== age) {
+                child = {...child, "age":age}
+              }
+              if (currentChildData.gender !== gender.value) {
+                child = {...child, "gender":gender.value}
+              }
+              if (currentChildData.difficulty !== difficulty.value) {
+                child = {...child, difficulty:difficulty.value }
+              }
+              // console.log(JSON.stringify(currentChildData.childfocus));
 
-            setChildrenData(newData);
+              // console.log(JSON.stringify(subjectFocusGraphData));
+              let focusChange = false;
+              for (let index = 0; index < currentChildData.childfocus.length; index++) {
+                // console.log(currentChildData.childfocus[index].value + " ---- " + subjectFocusGraphData[index].value);
+                if (currentChildData.childfocus[index].value !== subjectFocusGraphData[index].value) {
+                  focusChange = true;
+                  break;
+                }              
+              }
+              // console.log(focusChange);
 
-            setFullname('');
-            setAge('');
-            setProfilePicture(null);
-            setGender('');
-            setDifficulty('');
-            setSubjectFocusGraphData([
-              {
-                id: '1',
-                label: 'Science, biology, & Environment',
-                color: colors.subjectsFocus[100],
-                value: Math.floor(Math.random() * 100),
-              },
-              {
-                id: '2',
-                label: 'Social Study & Languages',
-                color: colors.subjectsFocus[200],
-                value: Math.floor(Math.random() * 100),
-              },
-              {
-                id: '3',
-                label: 'English & Coding',
-                color: colors.subjectsFocus[300],
-                value: Math.floor(Math.random() * 100),
-              },
-              {
-                id: '4',
-                label: 'Logic, Life Skills, Emotions, & Innovation',
-                color: colors.subjectsFocus[400],
-                value: Math.floor(Math.random() * 100),
-              },
-              {
-                id: '5',
-                label: 'Math, Money, & Music',
-                color: colors.subjectsFocus[500],
-                value: Math.floor(Math.random() * 100),
-              },
-            ]);
+              
+              if (focusChange) {
+                child = {...child, childfocus: JSON.stringify(subjectFocusGraphData) }
+              }
+              if (pictureChanged) {
+                console.log("Picture also changed");
+              }
+
+              // console.log(JSON.stringify(child) );
+              updateChild(child, pictureChanged ? profilePicture : null);
+              setRequestToCloseModel(true);  
+            }
+            
+
+            // setIsModalOpen({ isOpen: false, index: -1 });
+            // setFullname('');
+            // setAge('');
+            // setProfilePicture(null);
+            // setGender('');
+            // setDifficulty('');
+            // setSubjectFocusGraphData(subjectFocusDefaultValue);
           }}
         />
       </Box>

@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Box, Typography, alpha, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+
+import { useAppContext } from '../../../context/appContext';
 
 import {
   CustomSearchInput,
@@ -15,7 +18,12 @@ import { ROUTES } from '../../../config/routes';
 import { tokens } from '../../../theme';
 import { $ } from '../../../utils';
 
-import { SubjectData } from './data';
+import { API_BASE_URL, GET_ALL_SUBJECTS, GET_ALL_SUBJECTS_WITH_COURSES } from '../../../config/backend_endpoints';
+
+// import { SubjectData } from './data';
+var SubjectData = [];
+
+
 
 const LearnSubjectHome = () => {
   const theme = useTheme();
@@ -23,22 +31,48 @@ const LearnSubjectHome = () => {
 
   const navigate = useNavigate();
 
-  const [search, setSearch] = React.useState('');
-  const [subjectData, setSubjectData] = React.useState([]);
+  const { user, token } = useAppContext()
 
-  React.useEffect(() => {
-    setSubjectData(SubjectData);
+  const [search, setSearch] = useState('');
+  const [subjectData, setSubjectData] = useState([]);
+
+  const [loadingData, setLoadingData] = useState(false); 
+
+  useEffect(() => {
+    // setSubjectData(SubjectData);
+    loadALlSubjectsData(token, setLoadingData, setSubjectData);
   }, []);
 
   const handleSearch = () => {
     const filteredData = SubjectData.filter((subject) => {
-      return subject.title.toLowerCase().includes(search.toLowerCase());
+      return subject.subjectName.toLowerCase().includes(search.toLowerCase());
     });
     setSubjectData(filteredData);
   };
 
   return (
-    <DashboardContainer>
+    <DashboardContainer
+      wrapperStyle={{
+        padding: {
+          xs: $({ size: 20 }),
+          md: $({ size: 48 }),
+        },
+        pr: {
+          xs: $({ size: 20 }),
+          md: $({ size: 48 }),
+        },
+        // overflow: 'hidden',
+        'overflowY': 'auto',
+        '&::-webkit-scrollbar': {'display': 'none'},
+        'MsOverflowStyle': 'none',
+        'scrollbarWidth': 'none',
+      }}
+      containerStyle={{
+        gap: {
+          xs: $({ size: 20 }),
+          md: $({ size: 16 }),
+        },
+      }}>
       <Box
         sx={{
           display: 'flex',
@@ -46,9 +80,15 @@ const LearnSubjectHome = () => {
           gap: $({ size: 8 }),
           width: '100%',
         }}>
-        <CustomBreadcrumbs
-          data={[{ path: ROUTES.PARENT.LEARN_SUBJECT.INDEX, title: 'Home' }]}
-        />
+        <Box
+          sx={{
+            mt: `-${$({ size: 12 })}`,
+            ml: `-${$({ size: 4 })}`,
+          }}>
+          <CustomBreadcrumbs
+            data={[{ path: ROUTES.PARENT.LEARN_SUBJECT.INDEX, title: 'Home' }]}
+          />
+        </Box>
 
         <Box
           sx={{
@@ -74,6 +114,7 @@ const LearnSubjectHome = () => {
               fontWeight: '600',
               lineHeight: $({ size: 40 }),
               color: colors.extra.grey1,
+              mt: `-${$({ size: 2 })}`,
             }}>
             Choose a Subject
           </Typography>
@@ -89,8 +130,9 @@ const LearnSubjectHome = () => {
               },
               minWidth: {
                 xs: '100%',
-                sm: $({ size: 300 }),
+                sm: $({ size: 352 }),
               },
+              mt: `-${$({ size: 2 })}`,
             }}
             handleSearch={handleSearch}
             handleSearchOnEveryKeyStroke={handleSearch}
@@ -98,7 +140,21 @@ const LearnSubjectHome = () => {
         </Box>
       </Box>
 
-      {subjectData.length === 0 && (
+
+            {!loadingData && (
+              <Typography
+              sx={{
+                fontSize: $({ size: 24 }),
+                fontWeight: '400',
+                lineHeight: $({ size: 30 }),
+                color: colors.extra.grey3,
+                mt: `-${$({ size: 8 })}`,
+              }}>
+              Loading Subjects from server....!
+            </Typography>
+            )}
+
+      {(loadingData && subjectData.length === 0 )&& (
         <Typography
           sx={{
             fontSize: $({ size: 24 }),
@@ -115,15 +171,25 @@ const LearnSubjectHome = () => {
         sx={{
           display: 'grid',
           gridTemplateColumns: `repeat(auto-fill, minmax(${$({
-            size: 160,
+            size: 150,
           })}, 1fr))`,
           gridGap: {
             xs: $({ size: 24 }),
             md: $({ size: 40 }),
           },
           gridAutoRows: '1fr', // to make all the rows the same height
+          mt: $({ size: 24 }),
         }}>
         {subjectData.map((subject, index) => {
+          
+          let decisionFlag = subject.tier.toLowerCase() === user.tier.toLowerCase();
+          if (user.tier.toLowerCase() === 'pro' && subject.tier.toLowerCase() === 'basic') {
+            decisionFlag = true;
+          }else if (user.tier.toLowerCase() === 'premium' && subject.tier.toLowerCase() === 'pro' && subject.tier.toLowerCase() === 'basic') {
+            decisionFlag = true;
+          }
+          subject.isUnlocked = decisionFlag;
+
           return (
             <Box
               key={index}
@@ -135,7 +201,7 @@ const LearnSubjectHome = () => {
                       subject.id
                     ),
                     {
-                      state: { ...subject },
+                      state: { subject } ,
                     }
                   );
                 }
@@ -147,13 +213,15 @@ const LearnSubjectHome = () => {
                   colors.solids.black,
                   0.25
                 )}`,
-                backgroundColor: subject.isUnlocked
+                backgroundColor: subject.isActive
                   ? subject.color
                   : colors.extra.grey4,
                 gap: $({ size: 8 }),
                 display: 'flex',
                 flexDirection: 'column',
                 cursor: 'pointer',
+                width: $({ size: 160 }),
+                height: $({ size: 160 }),
               }}>
               <Box
                 sx={{
@@ -170,11 +238,12 @@ const LearnSubjectHome = () => {
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    padding: $({ size: 8 }),
+                    overflow: 'hidden'
+                    // padding: $({ size: 8 }),
                   }}>
                   <img
-                    src={ASSETS.PARENT.ICONS.DAILY_QUIZ}
-                    alt={subject.title}
+                    src={ subject.icon ? API_BASE_URL + subject.icon :  ASSETS.PARENT.ICONS.DAILY_QUIZ}
+                    alt={subject.subjectName}
                     style={{
                       filter: `invert(${subject.isUnlocked ? 0 : 1})`,
                       width: '100%',
@@ -190,23 +259,23 @@ const LearnSubjectHome = () => {
                 sx={{
                   fontSize: $({ size: 18 }),
                   fontWeight: '500',
-                  lineHeight: $({ size: 30 }),
-                  color: subject.isUnlocked
+                  lineHeight: $({ size: 20 }),
+                  color: subject.isActive
                     ? colors.solids.black
                     : colors.extra.grey2,
                 }}>
-                {subject.title}
+                {subject.subjectName}
               </Typography>
               <Typography
                 sx={{
                   fontSize: $({ size: 13.5 }),
                   fontWeight: '400',
                   lineHeight: $({ size: 16 }),
-                  color: subject.isUnlocked
+                  color: subject.isActive
                     ? colors.extra.grey1
                     : colors.extra.grey2,
                 }}>
-                {subject.description}
+                {subject.subjectDesc}
               </Typography>
             </Box>
           );
@@ -214,6 +283,35 @@ const LearnSubjectHome = () => {
       </Box>
     </DashboardContainer>
   );
+
+
+
+
+  
 };
+
+
+const loadALlSubjectsData = async (token, setLoading, setSubjectData)=> {
+  await axios.get(GET_ALL_SUBJECTS_WITH_COURSES, {
+    headers: {
+      "Authorization" : `Bearer ${token}`,
+      'Content-Type': 'text/plain'
+    }
+  })
+  .then((response) => {
+    setLoading(true);
+    // console.log(response.data);
+    SubjectData = response.data;
+    console.log(SubjectData);
+    setSubjectData(SubjectData);
+  
+  })
+  .catch((error) => {
+    // console.log(error);
+    setLoading(true);
+    console.error(error);
+
+  })
+}
 
 export default LearnSubjectHome;

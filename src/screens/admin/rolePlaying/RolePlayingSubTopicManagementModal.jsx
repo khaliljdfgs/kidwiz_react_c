@@ -1,5 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Grid, Typography, useTheme, alpha } from '@mui/material';
+
+import axios from 'axios';
+import { SUB_ROLE_PLAYING_TOPIC } from '../../../config/backend_endpoints';
+
+import { useAppContext } from '../../../context/appContext';
 
 import {
   CustomButton,
@@ -19,34 +24,67 @@ const RolePlayingSubTopicManagementModal = ({
   setIsModalOpen = () => {},
   currentSelectedRolePlayingSubTopic = null,
   setCurrentSelectedRolePlayingSubTopic = () => {},
-  setIsRolePlayingTopicModalOpen = () => {},
+  parentRolePlayTopic = null,
+  // setIsRolePlayingTopicModalOpen = () => {},
   offset = {
     top: 24,
     left: 48,
     right: 48,
   },
-  rolePlayingSubTopics = [],
-  setRolePlayingSubTopics = () => {},
+  // rolePlayingSubTopics = [],
+  // setRolePlayingSubTopics = () => {},
 }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  const { token, logoutUser } = useAppContext();
+  const authorizedAxios = axios.create({
+    baseURL: '',
+    // timeout: 3000,
+    headers: {
+      "Authorization" : `Bearer ${token}`,
+      'Content-Type': 'multipart/form-data'
+  }
+  });
+
+  // Add a response interceptor
+  authorizedAxios.interceptors.response.use(function (response) {
+    // Any status code that lie within the range of 2xx cause this function to trigger
+    // Do something with response data
+    return response;
+  }, function (error) {
+    if (error.response.status === 401) {
+      logoutUser();
+    }
+    // Any status codes that falls outside the range of 2xx cause this function to trigger
+    // Do something with response error
+    return Promise.reject(error);
+  });
+
+  const [subTopicUploadRequest, setSubTopicUploadRequest] = useState({
+    loading: false,
+    status: "",
+    error: "",
+  });
+
+
   const [rolePlayingSubTopicTitle, setRolePlayingSubTopicTitle] =
     React.useState(
       currentSelectedRolePlayingSubTopic
-        ? currentSelectedRolePlayingSubTopic.title
+        ? currentSelectedRolePlayingSubTopic.topic_title
         : ''
     );
 
   const [rolePlayingSubTopicDescription, setRolePlayingSubTopicDescription] =
     React.useState(
       currentSelectedRolePlayingSubTopic
-        ? currentSelectedRolePlayingSubTopic.description
+        ? currentSelectedRolePlayingSubTopic.desc
         : ''
     );
 
   const [overrideDefaultPrompt, setOverrideDefaultPrompt] =
-    React.useState(false);
+    React.useState( currentSelectedRolePlayingSubTopic
+      ? currentSelectedRolePlayingSubTopic.override_prompt :  false);
 
   const [prompt, setPrompt] = React.useState(
     currentSelectedRolePlayingSubTopic
@@ -54,18 +92,44 @@ const RolePlayingSubTopicManagementModal = ({
       : ''
   );
 
+  const [errorSubTopic, setErrorSubTopic] = useState({
+    title: '',
+    description: '',
+  })
+  const validateInput = () => {
+    let _errors = {...errorSubTopic};
+    if (rolePlayingSubTopicTitle === '') {
+      _errors.title = 'Required';
+    }else _errors.title = '';
+    if (rolePlayingSubTopicDescription === '') {
+      _errors.description = 'Required';
+    }else _errors.description = '';
+    setErrorSubTopic(_errors);
+    for (const key in _errors) if (_errors[key]) return false;
+    return true;
+  }
+
+  const closeModel = ()=>{
+    setIsModalOpen({ isOpen: false, index: -1, mode: 'create' });
+    setCurrentSelectedRolePlayingSubTopic(null);
+  }
+
+  useEffect(()=>{
+
+    if (!subTopicUploadRequest.loading && subTopicUploadRequest.status === 'complete' && subTopicUploadRequest.error === '') {
+      closeModel();
+    }
+  },[subTopicUploadRequest])
   return (
     <CustomModal
       showBackdrop={true}
       title={
         currentSelectedRolePlayingSubTopic
-          ? 'Edit Roleplaying Sub-Subject'
-          : 'New Roleplaying Sub-Subject'
+          ? 'Edit Roleplaying Sub-Topic'
+          : 'New Roleplaying Sub-Topic'
       }
       onClose={() => {
-        setIsModalOpen({ isOpen: false, index: -1 });
-        setIsRolePlayingTopicModalOpen({ isOpen: true, index: -1 });
-        setCurrentSelectedRolePlayingSubTopic(null);
+        closeModel();
       }}
       offset={{
         top: offset.top,
@@ -188,13 +252,14 @@ const RolePlayingSubTopicManagementModal = ({
             )}`,
           }}
           onClick={() => {
-            setIsModalOpen({ isOpen: false, index: -1 });
-            setIsRolePlayingTopicModalOpen({ isOpen: true, index: -1 });
-            setCurrentSelectedRolePlayingSubTopic(null);
+            closeModel();
           }}
         />
         <CustomButton
           label='Save'
+          disabled= {subTopicUploadRequest.loading}
+          loading = {subTopicUploadRequest.loading}
+          loadingColor='#333333'
           sx={{
             maxWidth: $({ size: 160 }),
             boxShadow: `0 0 ${$({ size: 4 })} 0 ${alpha(
@@ -204,22 +269,61 @@ const RolePlayingSubTopicManagementModal = ({
           }}
           rightIcon={<SaveIcon size={$({ size: 24, numeric: true })} />}
           onClick={() => {
-            setRolePlayingSubTopics(
-              rolePlayingSubTopics.map((subSubject) => {
-                if (subSubject.id === currentSelectedRolePlayingSubTopic.id) {
-                  return {
-                    ...subSubject,
-                    title: rolePlayingSubTopicTitle,
-                    description: rolePlayingSubTopicDescription,
-                    prompt: prompt,
-                  };
-                }
-                return subSubject;
-              })
-            );
-            setIsModalOpen({ isOpen: false, index: -1 });
-            setIsRolePlayingTopicModalOpen({ isOpen: true, index: -1 });
-            setCurrentSelectedRolePlayingSubTopic(null);
+            if (!validateInput()) {
+              return;
+            }
+
+            if (isModalOpen.mode === 'create') {
+              let subRolePlayingTopic = {
+                roleplayId: parentRolePlayTopic.id,
+                topic_title: rolePlayingSubTopicTitle,
+                desc: rolePlayingSubTopicDescription,
+                override_prompt: overrideDefaultPrompt,
+                prompt: prompt,
+                isActive: true
+              };
+              saveSubRolePlayingTopic(authorizedAxios, subRolePlayingTopic, setSubTopicUploadRequest);
+            }else if (isModalOpen.mode === 'update') {
+              let subRolePlayingTopic = {
+                subroleplay_id: currentSelectedRolePlayingSubTopic.id
+              };
+              if (rolePlayingSubTopicTitle != currentSelectedRolePlayingSubTopic.topic_title) {
+                subRolePlayingTopic.topic_title = rolePlayingSubTopicTitle;
+              }
+              if (rolePlayingSubTopicDescription != currentSelectedRolePlayingSubTopic.desc) {
+                subRolePlayingTopic.desc = rolePlayingSubTopicDescription;
+              }
+              if (overrideDefaultPrompt != currentSelectedRolePlayingSubTopic.override_prompt) {
+                subRolePlayingTopic.override_prompt = overrideDefaultPrompt;
+              }
+              if (prompt != currentSelectedRolePlayingSubTopic.prompt) {
+                subRolePlayingTopic.prompt = prompt;
+              }
+
+              // console.log(subRolePlayingTopic);
+              if (Object.keys(subRolePlayingTopic).length > 1) {
+                updateSubRolePlayingTopic(authorizedAxios, subRolePlayingTopic, setSubTopicUploadRequest);
+                
+              }else{
+                closeModel();
+                return;
+              }
+            }
+            
+            // setRolePlayingSubTopics(
+            //   rolePlayingSubTopics.map((subSubject) => {
+            //     if (subSubject.id === currentSelectedRolePlayingSubTopic.id) {
+            //       return {
+            //         ...subSubject,
+            //         title: rolePlayingSubTopicTitle,
+            //         description: rolePlayingSubTopicDescription,
+            //         prompt: prompt,
+            //       };
+            //     }
+            //     return subSubject;
+            //   })
+            // );
+            // setIsRolePlayingTopicModalOpen({ isOpen: true, index: -1 });
           }}
         />
       </Box>
@@ -228,3 +332,57 @@ const RolePlayingSubTopicManagementModal = ({
 };
 
 export default RolePlayingSubTopicManagementModal;
+
+const saveSubRolePlayingTopic = async (authorizedAxios, rolePlayingSubTopic, setSubTopicUploadRequest)=>{
+  setSubTopicUploadRequest({
+    loading: true,
+    status: "start",
+    error: "",
+  });
+  try {
+    const response = await authorizedAxios.post(SUB_ROLE_PLAYING_TOPIC.SAVE, {
+                        ...rolePlayingSubTopic
+                      });
+    // console.log(response);
+    setSubTopicUploadRequest({
+      loading: false,
+      status: "complete",
+      error: "",
+    });
+    
+  } catch (error) {
+    console.error(error);
+    setSubTopicUploadRequest({
+      loading: false,
+      status: "complete",
+      error: error,
+    });
+  }
+}
+
+const updateSubRolePlayingTopic = async (authorizedAxios, rolePlayingSubTopic, setSubTopicUploadRequest)=>{
+  setSubTopicUploadRequest({
+    loading: true,
+    status: "start",
+    error: "",
+  });
+  try {
+    const response = await authorizedAxios.patch(SUB_ROLE_PLAYING_TOPIC.UPDATE, {
+                        ...rolePlayingSubTopic
+                      });
+    // console.log(response);
+    setSubTopicUploadRequest({
+      loading: false,
+      status: "complete",
+      error: "",
+    });
+    
+  } catch (error) {
+    console.error(error);
+    setSubTopicUploadRequest({
+      loading: false,
+      status: "complete",
+      error: error,
+    });
+  }
+}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Grid, Typography, useTheme } from '@mui/material';
-import { SortableContainer, SortableElement } from 'react-sortable-hoc';
+// import { SortableContainer, SortableElement } from 'react-sortable-hoc';
 import { arrayMoveImmutable } from 'array-move';
 
 import { CustomTextInput } from '../../../components';
@@ -10,97 +10,96 @@ import { CrossIcon, ReorderThreeIcon, RightArrowIcon } from '../../../icons';
 import { tokens } from '../../../theme';
 import { $ } from '../../../utils';
 
-const SortablePromptItem = SortableElement((props) => {
-  const { prompt, prompts, setPrompts, currentIndex, colors } = props;
+//   const { prompt, prompts, setPrompts, currentIndex, colors } = props;
 
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: $({ size: 12 }),
-        width: '100%',
-      }}>
-      <Box
-        sx={{
-          background: colors.extra.grey5,
-          padding: `${$({ size: 9 })} ${$({
-            size: 14,
-          })}`,
-          borderRadius: $({ size: 12 }),
-          overflow: 'hidden',
-          width: '100%',
-          userSelect: 'none',
-        }}>
-        <Typography
-          sx={{
-            fontSize: $({ size: 13.5 }),
-            fontWeight: '400',
-            color: colors.solids.black,
-            textOverflow: 'ellipsis',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-          }}>
-          {prompt}
-        </Typography>
-      </Box>
+//   return (
+//     <Box
+//       sx={{
+//         display: 'flex',
+//         flexDirection: 'row',
+//         alignItems: 'center',
+//         gap: $({ size: 12 }),
+//         width: '100%',
+//       }}>
+//       <Box
+//         sx={{
+//           background: colors.extra.grey5,
+//           padding: `${$({ size: 9 })} ${$({
+//             size: 14,
+//           })}`,
+//           borderRadius: $({ size: 12 }),
+//           overflow: 'hidden',
+//           width: '100%',
+//           userSelect: 'none',
+//         }}>
+//         <Typography
+//           sx={{
+//             fontSize: $({ size: 13.5 }),
+//             fontWeight: '400',
+//             color: colors.solids.black,
+//             textOverflow: 'ellipsis',
+//             overflow: 'hidden',
+//             whiteSpace: 'nowrap',
+//           }}>
+//           {prompt}
+//         </Typography>
+//       </Box>
 
-      <Box sx={{ cursor: 'pointer' }}>
-        <ReorderThreeIcon
-          size={$({ size: 16, numeric: true })}
-          color={colors.extra.grey3}
-        />
-      </Box>
+//       <Box sx={{ cursor: 'pointer' }}>
+//         <ReorderThreeIcon
+//           size={$({ size: 16, numeric: true })}
+//           color={colors.extra.grey3}
+//         />
+//       </Box>
 
-      <Box
-        sx={{ cursor: 'pointer' }}
-        onClick={() => {
-          setPrompts([
-            ...prompts.slice(0, currentIndex),
-            ...prompts.slice(currentIndex + 1),
-          ]);
-        }}>
-        <CrossIcon
-          size={$({ size: 16, numeric: true })}
-          color={colors.extra.grey3}
-        />
-      </Box>
-    </Box>
-  );
-});
+//       <Box
+//         sx={{ cursor: 'pointer' }}
+//         onClick={() => {
+//           setPrompts([
+//             ...prompts.slice(0, currentIndex),
+//             ...prompts.slice(currentIndex + 1),
+//           ]);
+//         }}>
+//         <CrossIcon
+//           size={$({ size: 16, numeric: true })}
+//           color={colors.extra.grey3}
+//         />
+//       </Box>
+//     </Box>
+//   );
+// });
 
-const SortablePromptContainer = SortableContainer(({ children, colors }) => {
-  return (
-    <Grid
-      item
-      xs={12}
-      md={6.7}
-      sx={{
-        'mt': {
-          xs: $({ size: 0 }),
-          md: $({ size: 36 }),
-        },
-        // 'maxHeight': $({ size: 244 }),
-        'height': '100%',
-        'overflowY': 'scroll',
-        'pr': $({ size: 12 }),
-        '&::-webkit-scrollbar': {
-          width: $({ size: 8 }),
-          borderRadius: $({ size: 8 }),
-        },
-        '&::-webkit-scrollbar-thumb': {
-          backgroundColor: colors.extra.grey3,
-          borderRadius: $({ size: 8 }),
-        },
-        'display': 'flex',
-        'flexDirection': 'column',
-        'gap': $({ size: 8 }),
-      }}>
-      {children}
-    </Grid>
-  );
-});
+// const SortablePromptContainer = SortableContainer(({ children, colors }) => {
+//   return (
+//     <Grid
+//       item
+//       xs={12}
+//       md={6.7}
+//       sx={{
+//         'mt': {
+//           xs: $({ size: 0 }),
+//           md: $({ size: 36 }),
+//         },
+//         // 'maxHeight': $({ size: 244 }),
+//         'height': '100%',
+//         'overflowY': 'scroll',
+//         'pr': $({ size: 12 }),
+//         '&::-webkit-scrollbar': {
+//           width: $({ size: 8 }),
+//           borderRadius: $({ size: 8 }),
+//         },
+//         '&::-webkit-scrollbar-thumb': {
+//           backgroundColor: colors.extra.grey3,
+//           borderRadius: $({ size: 8 }),
+//         },
+//         'display': 'flex',
+//         'flexDirection': 'column',
+//         'gap': $({ size: 8 }),
+//       }}>
+//       {children}
+//     </Grid>
+//   );
+// });
 
 const TrainByPromptsTab = ({ topSectionHeight = 0 }) => {
   const theme = useTheme();
@@ -187,27 +186,7 @@ const TrainByPromptsTab = ({ topSectionHeight = 0 }) => {
           />
         </Box>
       </Grid>
-      <SortablePromptContainer
-        colors={colors}
-        // distance={1}
-        pressDelay={120}
-        onSortEnd={({ oldIndex, newIndex }) => {
-          setPrompts(arrayMoveImmutable(prompts, oldIndex, newIndex));
-        }}>
-        {prompts.map((prompt, index) => {
-          return (
-            <SortablePromptItem
-              key={`prompt-${index}`}
-              index={index}
-              currentIndex={index}
-              prompts={prompts}
-              setPrompts={setPrompts}
-              prompt={prompt}
-              colors={colors}
-            />
-          );
-        })}
-      </SortablePromptContainer>
+      
     </Grid>
   );
 };

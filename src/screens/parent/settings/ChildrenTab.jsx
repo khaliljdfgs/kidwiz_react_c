@@ -6,6 +6,8 @@ import { $ } from '../../../utils';
 import AddChildModal from './../../onBoarding/addChildren/AddChildModal';
 import ChildInfoCard from './../../onBoarding/addChildren/ChildInfoCard';
 
+import ChildrenHorzontalCardList from '../../onBoarding/addChildren/ChildrenHorzontalCardList';
+
 const ChildrenTab = ({ topSectionHeight = 0 }) => {
   const [childrenData, setChildrenData] = React.useState([
     { hasInfo: false, disabled: false },
@@ -21,16 +23,37 @@ const ChildrenTab = ({ topSectionHeight = 0 }) => {
   return (
     <Box
       sx={{
+        // display: 'flex',
+        // gap: $({ size: 20 }),
+        // justifyContent: 'center',
+        // alignItems: 'center',
+        // mt: $({ size: 20 }),
         display: 'flex',
-        gap: $({ size: 20 }),
-        justifyContent: 'center',
+        flexDirection: 'column',
         alignItems: 'center',
+        // width: '100%',
+        // height: '100%',
       }}>
-      <Box
+
+        <ChildrenHorzontalCardList 
+          wrapperStyleChildCard={{
+            padding: 0,
+            maxWidth: $({ size: 304 }),
+            height: $({ size: 128 }),
+            gap: $({ size: 16 }),
+          }}
+          addButtonStyleChildCard={{
+            width: '100%',
+          }}
+          containerStyleChildCard={{
+            maxWidth: $({ size: 304 }),
+            height: $({ size: 128 }),
+          }}
+        />
+      {/* <Box
         sx={{
           display: 'flex',
           flexDirection: 'row',
-          flexWrap: 'wrap',
           gap: $({ size: 24 }),
           justifyContent: 'center',
         }}>
@@ -57,12 +80,17 @@ const ChildrenTab = ({ topSectionHeight = 0 }) => {
                 setChildrenData(newChildrenData);
               }}
               wrapperStyle={{
-                padding: '0',
-                minWidth: $({ size: 288 }),
-                flex: 1,
+                padding: 0,
+                maxWidth: $({ size: 304 }),
+                height: $({ size: 128 }),
+                gap: $({ size: 16 }),
               }}
               addButtonStyle={{
                 width: '100%',
+              }}
+              containerStyle={{
+                maxWidth: $({ size: 304 }),
+                height: $({ size: 128 }),
               }}
             />
           );
@@ -77,7 +105,7 @@ const ChildrenTab = ({ topSectionHeight = 0 }) => {
           isModalOpen={isModalOpen}
           setIsModalOpen={setIsModalOpen}
         />
-      )}
+      )} */}
     </Box>
   );
 };

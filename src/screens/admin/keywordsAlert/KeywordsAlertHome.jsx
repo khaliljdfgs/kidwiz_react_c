@@ -1,21 +1,60 @@
 import React from 'react';
-import { Box, useTheme, Typography, Grid } from '@mui/material';
-import { SortableContainer, SortableElement } from 'react-sortable-hoc';
-import { arrayMoveImmutable } from 'array-move';
+import { Box, useTheme, Typography, Grid, alpha } from '@mui/material';
+// import { SortableContainer, SortableElement } from 'react-sortable-hoc';
+// import { arrayMoveImmutable } from 'array-move';
 
-import { DashboardContainer, CustomTextInput } from '../../../components';
+import { ReactSortable } from "react-sortablejs";
 
-import { CrossIcon, ReorderThreeIcon, RightArrowIcon } from '../../../icons';
+import { DashboardContainer, CustomTextInput, CustomButton } from '../../../components';
+
+import { CrossIcon, ReorderThreeIcon, RightArrowIcon, SaveIcon } from '../../../icons';
 
 import { tokens } from '../../../theme';
 import { $ } from '../../../utils';
 
-const SortableNotificationKeywordItem = SortableElement((props) => {
-  const { prompt, prompts, setPrompts, currentIndex, colors } = props;
+
+
+// const SortableNotificationKeywordsContainer = SortableContainer(
+//   ({ children, colors }) => {
+//     return (
+//       <Grid
+//         item
+//         xs={12}
+//         md={6.7}
+//         sx={{
+//           'mt': {
+//             xs: $({ size: 0 }),
+//             md: $({ size: 36 }),
+//           },
+//           // 'maxHeight': $({ size: 244 }),
+//           'height': '100%',
+//           'overflowY': 'scroll',
+//           'pr': $({ size: 12 }),
+//           '&::-webkit-scrollbar': {
+//             width: $({ size: 8 }),
+//             borderRadius: $({ size: 8 }),
+//           },
+//           '&::-webkit-scrollbar-thumb': {
+//             backgroundColor: colors.extra.grey3,
+//             borderRadius: $({ size: 8 }),
+//           },
+//           'display': 'flex',
+//           'flexDirection': 'column',
+//           'gap': $({ size: 8 }),
+//         }}>
+//         {children}
+//       </Grid>
+//     );
+//   }
+// );
+
+const SortableItem = (props) => {
+  const { keyword, notificationKeywords, setNotificationKeywords, currentIndex, deletedSelectedIndex, colors } = props;
 
   return (
     <Box
       sx={{
+        mt: '10px',
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
@@ -42,7 +81,7 @@ const SortableNotificationKeywordItem = SortableElement((props) => {
             overflow: 'hidden',
             whiteSpace: 'nowrap',
           }}>
-          {prompt}
+          {keyword}
         </Typography>
       </Box>
 
@@ -56,10 +95,13 @@ const SortableNotificationKeywordItem = SortableElement((props) => {
       <Box
         sx={{ cursor: 'pointer' }}
         onClick={() => {
-          setPrompts([
-            ...prompts.slice(0, currentIndex),
-            ...prompts.slice(currentIndex + 1),
-          ]);
+          deletedSelectedIndex(currentIndex);
+          // let array = [
+          //   ...prompts.slice(0, currentIndex),
+          //   ...prompts.slice(currentIndex + 1),
+          // ]
+          // setPrompts(array);
+          // updatePromptByPromptsList();
         }}>
         <CrossIcon
           size={$({ size: 16, numeric: true })}
@@ -68,53 +110,46 @@ const SortableNotificationKeywordItem = SortableElement((props) => {
       </Box>
     </Box>
   );
-});
+}
 
-const SortableNotificationKeywordsContainer = SortableContainer(
-  ({ children, colors }) => {
-    return (
-      <Grid
-        item
-        xs={12}
-        md={6.7}
-        sx={{
-          'mt': {
-            xs: $({ size: 0 }),
-            md: $({ size: 36 }),
-          },
-          // 'maxHeight': $({ size: 244 }),
-          'height': '100%',
-          'overflowY': 'scroll',
-          'pr': $({ size: 12 }),
-          '&::-webkit-scrollbar': {
-            width: $({ size: 8 }),
-            borderRadius: $({ size: 8 }),
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: colors.extra.grey3,
-            borderRadius: $({ size: 8 }),
-          },
-          'display': 'flex',
-          'flexDirection': 'column',
-          'gap': $({ size: 8 }),
-        }}>
-        {children}
-      </Grid>
-    );
-  }
-);
+const SortableKeywordsContainer = ({ children, colors }) => {
+  return (
+    <Grid
+      item
+      xs={12}
+      md={5.7}
+      sx={{
+        'mt': {
+          xs: $({ size: 0 }),
+          md: $({ size: 36 }),
+        },
+        'maxHeight': $({ size: 244 }),
+        'overflowY': 'scroll',
+        'pr': $({ size: 12 }),
+        '&::-webkit-scrollbar': {
+          width: $({ size: 8 }),
+          borderRadius: $({ size: 8 }),
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: colors.extra.grey3,
+          borderRadius: $({ size: 8 }),
+        },
+        'display': 'flex',
+        'flexDirection': 'column',
+        'gap': $({ size: 10 }),
+        
+      }}>
+      {children}
+    </Grid>
+  );
+};
 
 const KeywordsAlertHome = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  const [notificationKeywords, setNotificationKeywords] = React.useState([
-    ...Array(20)
-      .fill('Notification Keyword')
-      .map((item, index) => {
-        return `${item} ${index + 1}`;
-      }),
-  ]);
+  let keywordsOnload = []
+  const [notificationKeywords, setNotificationKeywords] = React.useState(keywordsOnload);
 
   const [notificationKeyword, setNotificationKeyword] = React.useState('');
 
@@ -125,6 +160,10 @@ const KeywordsAlertHome = () => {
   React.useEffect(() => {
     setTopSectionHeight(topSectionRef.current?.offsetHeight || 0);
   }, [topSectionRef.current?.offsetHeight]);
+
+  const deletedSelectedIndex = (index) => {
+    console.log('Delete index');
+  }
 
   return (
     <DashboardContainer
@@ -208,7 +247,9 @@ const KeywordsAlertHome = () => {
             label='Notification Keywords'
             placeholder='Separate keywords by a comma e.g. Keyword, keyword, keyword, ...'
             value={notificationKeyword}
-            onChange={(e) => setNotificationKeyword(e.target.value)}
+            onChange={(e) => {
+              setNotificationKeyword(e.target.value);
+            }}
             multiline={true}
             containerStyle={{
               width: '100%',
@@ -234,11 +275,15 @@ const KeywordsAlertHome = () => {
           <Box
             onClick={() => {
               if (notificationKeyword) {
-                setNotificationKeywords([
-                  notificationKeyword,
-                  ...notificationKeywords,
-                ]);
-                setNotificationKeyword('');
+                let tempArray = notificationKeyword.split(",");
+                let notificationKeywordArray = tempArray.map((item, index)=>{return {id:index, name:item}});
+                
+                  setNotificationKeywords(notificationKeywordArray);
+                // setNotificationKeywords([
+                //   notificationKeyword,
+                //   ...notificationKeywords,
+                // ]);
+                // setNotificationKeyword('');
               }
             }}
             sx={{
@@ -255,30 +300,91 @@ const KeywordsAlertHome = () => {
             />
           </Box>
         </Grid>
-        <SortableNotificationKeywordsContainer
-          colors={colors}
-          // distance={1}
-          pressDelay={120}
-          onSortEnd={({ oldIndex, newIndex }) => {
-            setNotificationKeywords(
-              arrayMoveImmutable(notificationKeywords, oldIndex, newIndex)
-            );
-          }}>
-          {notificationKeywords.map((prompt, index) => {
-            return (
-              <SortableNotificationKeywordItem
-                key={`prompt-${index}`}
-                index={index}
-                currentIndex={index}
-                prompts={notificationKeywords}
-                setPrompts={setNotificationKeywords}
-                prompt={prompt}
-                colors={colors}
-              />
-            );
-          })}
-        </SortableNotificationKeywordsContainer>
+
+        <SortableKeywordsContainer colors={colors}>
+          <ReactSortable 
+            list={notificationKeywords} 
+            setList={(newState) => {
+              
+
+              if (notificationKeywords.length === newState.length) {
+                let flag = true;
+                for (let index = 0; index < notificationKeywords.length; index++) {
+                  if (notificationKeywords[index].name !== newState[index].name) {
+                    flag = flag && false;
+                    break;
+                  } 
+                }
+                if (flag) {
+                  return;
+                }
+              }
+
+
+              console.log(newState);
+                setNotificationKeywords(newState);
+                let tempArray = newState.map((item)=>{return item.name});
+                tempArray = tempArray.join(",");
+                setNotificationKeyword(tempArray);
+                // this.setState({ list: newState })
+                // updatePromptByPromptsList();
+              
+            }}
+            
+            >
+            {notificationKeywords.map((item, index) => (
+              // <Box >
+                <SortableItem 
+                  key={item.id} 
+                  keyword={item.name} 
+                  colors={colors}
+                  notificationKeywords= {notificationKeywords}
+                  setNotificationKeywords={setNotificationKeywords} 
+                  currentIndex= {index}
+                  deletedSelectedIndex={deletedSelectedIndex}
+                >
+
+                </SortableItem>
+                
+              // </Box>
+            ))}
+          </ReactSortable>
+        </SortableKeywordsContainer>
+
+        
+        <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          // backgroundColor: 'red',
+          width: '100%',
+          height: 'fit-content',
+          // gap: $({ size: 24 }),
+        }}>
+          <CustomButton
+            label='Save'
+            // disabled = {promptUploadRequest.loading}
+            // loading= {promptUploadRequest.loading}
+            sx={{
+              // maxHeight: $({ size: 60 }),
+              maxWidth: $({ size: 160 }),
+              boxShadow: `0 0 ${$({ size: 4 })} 0 ${alpha(
+                colors.solids.black,
+                0.25
+              )}`,
+            }}
+            rightIcon={<SaveIcon size={$({ size: 24, numeric: true })} />}
+            onClick={() => {
+              
+              
+              
+            }}
+          />
+        </Box>
+
+        
       </Grid>
+      
     </DashboardContainer>
   );
 };

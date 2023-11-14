@@ -30,12 +30,15 @@ body,
   border-radius: 12px;
 }
 
-@media (max-width: 900px) {
-  .pro-sidebar .lg {
+/* @media (max-width: 900px) {
+  .ps-sidebar-container .lg {
     position: fixed !important;
     left: -270px !important;
+    
   }
-}
+  
+} */
+
 
 /* PATCH: ADDED THIS TO DISABLE ALL VIEWS EXCEPT DESKTOP */
 /* @media (max-width: 900px) {

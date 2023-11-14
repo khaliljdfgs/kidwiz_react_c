@@ -1,69 +1,68 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Grid, useTheme, alpha, Typography, Avatar } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
+
 
 import {
   CustomButton,
-  CustomDropDown,
   CustomSearchInput,
   DashboardContainer,
-  QuestionProgressBar,
 } from '../../../components';
 
-import { AddIcon, ChestIcon, EditIcon, ReorderThreeIcon } from '../../../icons';
+import SelectChildAndDatePanel from '../../../components/parentDashboard/SelectChildAndDatePanel';
+import SelectedChildWithTimeDetails from '../../../components/parentDashboard/SelectedChildWithTimeDetails';
+// import SelectChildAndDatePanel from '../../../components/parent/SelectChildAndDatePanel';
+// import SelectedChildWithTimeDetails from '../../../components/parent/SelectedChildWithTimeDetails';
 
-import { ASSETS } from '../../../config/assets';
+import { AddIcon, EditIcon, ReorderThreeIcon } from '../../../icons';
+
+import { useAppContext } from '../../../context/appContext';
+
+// import { ASSETS } from '../../../config/assets';
 import { tokens } from '../../../theme';
 import { $ } from '../../../utils';
 
 import JournalManagementModal from './JournalManagementModal';
-import { JournalsData } from './data';
+import { JOURNAL } from '../../../config/backend_endpoints';
+
+var JournalsData = [];
 
 const JournalHome = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  const childData = [
-    {
-      fullname: 'Liam Johnson',
-      email: 'labanovskiy@gmail.com',
-      photo: ASSETS.ON_BOARDING.CHILD,
-    },
-    {
-      fullname: 'Alex Johnson',
-      email: 'samhar25@gmail.com',
-      photo: ASSETS.ON_BOARDING.CHILD,
-    },
-    {
-      fullname: 'Mike Johnson',
-      email: 'mikeluther1@gmail.com',
-      photo: ASSETS.ON_BOARDING.CHILD,
-    },
-  ];
+  const { authorizedAxios, users_children, selected_Child_index }  = useAppContext();
 
-  const [childDropDownOpen, setChildDropDownOpen] = React.useState(false);
-  const [selectedChild, setSelectedChild] = React.useState(childData[0]);
+  const [selectedChild, setSelectedChild] = React.useState(users_children[selected_Child_index]);
 
-  const [datesDropDownOpen, setDatesDropDownOpen] = React.useState(false);
-  const [selectedDates, setSelectedDates] = React.useState({});
+  // const [datesDropDownOpen, setDatesDropDownOpen] = React.useState(false);
+  // const [selectedDates, setSelectedDates] = React.useState({});
 
   const [isModalOpen, setIsModalOpen] = React.useState({
     isOpen: false,
     index: -1,
+    mode: 'create' // create || update
   });
 
   const [search, setSearch] = React.useState('');
-  const handleSearch = () => {};
+  const handleSearch = () => {
+    const filteredData = JournalsData.filter((journal) => {
+      return journal.title.toLowerCase().includes(search.toLowerCase());
+    });
+    setJournals(filteredData);
+  };
 
   const [currentSelectedJournal, setCurrentSelectedJournal] =
     React.useState(null);
   const [journals, setJournals] = React.useState(JournalsData);
+  const [loadingAllJournals, setLoadingAllJournals] = useState(false);
 
-  React.useEffect(() => {
-    setSelectedDates({
-      startDate: 'April 9, 2023',
-      endDate: 'May 6, 2023',
-    });
-  }, []);
+  // React.useEffect(() => {
+  //   setSelectedDates({
+  //     startDate: 'April 9, 2023',
+  //     endDate: 'May 6, 2023',
+  //   });
+  // }, []);
 
   // TO CALCULATE TOP SECTION HEIGHT
   const topSectionRef = React.useRef(null);
@@ -73,10 +72,17 @@ const JournalHome = () => {
     setTopSectionHeight(topSectionRef.current?.offsetHeight || 0);
   }, [topSectionRef.current?.offsetHeight]);
 
+
+  useEffect(()=>{
+    if (!isModalOpen.isOpen) {
+      loadAllJournals(authorizedAxios, users_children[selected_Child_index].id,setLoadingAllJournals,setJournals);
+    }
+  },[selected_Child_index, isModalOpen]);
+
   return (
     <DashboardContainer
       disableContainer
-      wrapperStyle={{ position: 'relative' }}>
+      wrapperStyle={{ position: 'relative', overflow: 'hidden' }}>
       <Grid
         container
         sx={{
@@ -85,8 +91,9 @@ const JournalHome = () => {
           position: 'relative',
           display: 'flex',
           flexDirection: { xs: 'column', lg: 'row' },
+          
         }}>
-        {(childDropDownOpen || datesDropDownOpen) && (
+        {/* {(childDropDownOpen || datesDropDownOpen) && (
           <Box
             onClick={() => {
               setChildDropDownOpen(false);
@@ -103,12 +110,12 @@ const JournalHome = () => {
               borderRadius: $({ size: 12 }),
             }}
           />
-        )}
+        )} */}
 
         <Grid
           item
           xs={12}
-          lg={3}
+          lg={2.8}
           sx={{
             flex: '1',
             display: 'flex',
@@ -122,7 +129,7 @@ const JournalHome = () => {
             )}`,
             borderRadius: $({ size: 12 }),
           }}>
-          <Grid
+          {/* <Grid
             container
             sx={{
               // height: '100%',
@@ -152,15 +159,21 @@ const JournalHome = () => {
                 labelStyle={{
                   fontWeight: '600',
                   fontSize: $({ size: 13.5 }),
-                  lineHeight: $({ size: 25 }),
+                  lineHeight: $({ size: 8 }),
                 }}
                 placeholderClosedStyle={{
                   fontSize: $({ size: 13.5 }),
-                  lineHeight: $({ size: 25 }),
+                  lineHeight: $({ size: 20 }),
                 }}
                 placeholderOpenStyle={{
                   fontSize: $({ size: 13.5 }),
                   lineHeight: $({ size: 25 }),
+                }}
+                inputClosedStyle={{
+                  padding: `${$({ size: 12 })} ${$({ size: 16 })}`,
+                }}
+                inputOpenStyle={{
+                  padding: `${$({ size: 12 })} ${$({ size: 16 })}`,
                 }}
                 data={childData.map((item) => {
                   return {
@@ -224,13 +237,13 @@ const JournalHome = () => {
                 })}
               />
 
-              <Box height={`${$({ size: 24 })}`} />
+              <Box height={`${$({ size: 20 })}`} />
 
               <Typography
                 sx={{
                   fontSize: $({ size: 13.5 }),
                   fontWeight: '600',
-                  lineHeight: $({ size: 25 }),
+                  lineHeight: $({ size: 13.5 }),
                   color: colors.extra.grey3,
                   visibility: selectedChild.fullname ? 'visible' : 'hidden',
                 }}>
@@ -241,7 +254,7 @@ const JournalHome = () => {
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: $({ size: 16 }),
+                  gap: $({ size: 8 }),
                   marginTop: $({ size: 8 }),
                   visibility: selectedChild.fullname ? 'visible' : 'hidden',
                 }}>
@@ -262,7 +275,7 @@ const JournalHome = () => {
                     sx={{
                       fontSize: $({ size: 13.5 }),
                       fontWeight: '500',
-                      lineHeight: $({ size: 25 }),
+                      lineHeight: $({ size: 13.5 }),
                       color: colors.extra.grey1,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -273,7 +286,7 @@ const JournalHome = () => {
 
                   <Typography
                     sx={{
-                      fontSize: $({ size: 12 }),
+                      fontSize: $({ size: 10 }),
                       fontWeight: '400',
                       color: colors.extra.grey2,
                       overflow: 'hidden',
@@ -291,7 +304,10 @@ const JournalHome = () => {
               xs={12}
               sm={6}
               md={6}
-              lg={12}>
+              lg={12}
+              sx={{
+                mt: $({ size: 24 }),
+              }}>
               <CustomDropDown
                 label='Dates'
                 value='Choose dates'
@@ -301,19 +317,25 @@ const JournalHome = () => {
                 labelStyle={{
                   fontWeight: '600',
                   fontSize: $({ size: 13.5 }),
-                  lineHeight: $({ size: 25 }),
+                  lineHeight: $({ size: 8 }),
                 }}
                 placeholderClosedStyle={{
                   fontSize: $({ size: 13.5 }),
-                  lineHeight: $({ size: 25 }),
+                  lineHeight: $({ size: 20 }),
                 }}
                 placeholderOpenStyle={{
                   fontSize: $({ size: 13.5 }),
                   lineHeight: $({ size: 25 }),
                 }}
+                inputClosedStyle={{
+                  padding: `${$({ size: 12 })} ${$({ size: 16 })}`,
+                }}
+                inputOpenStyle={{
+                  padding: `${$({ size: 12 })} ${$({ size: 16 })}`,
+                }}
               />
 
-              <Box height={`${$({ size: 24 })}`} />
+              <Box height={`${$({ size: 16 })}`} />
 
               <Typography
                 sx={{
@@ -332,24 +354,29 @@ const JournalHome = () => {
                   visibility: selectedDates?.startDate ? 'visible' : 'hidden',
                 }}>{`${selectedDates?.startDate} 🡢 ${selectedDates?.endDate}`}</Typography>
             </Grid>
-          </Grid>
+          </Grid> */}
+          <SelectChildAndDatePanel />
         </Grid>
+
+        
 
         {selectedChild.fullname && (
           <Grid
             item
             xs={12}
-            lg={9}
+            lg={9.2}
             sx={{
               flex: '1',
               padding: {
                 xs: `${$({ size: 20 })} 0 0 0`,
-                lg: `0 0 0 ${$({ size: 20 })}`,
+                lg: `0 0 0 ${$({ size: 24 })}`,
               },
               position: 'relative',
+              
             }}>
             <Box
               sx={{
+                position: 'relative',
                 display: 'flex',
                 flexDirection: 'column',
                 backgroundColor: colors.white[800],
@@ -362,7 +389,23 @@ const JournalHome = () => {
                 height: '100%',
                 padding: $({ size: 24 }),
                 gap: $({ size: 24 }),
+                
               }}>
+              {isModalOpen.isOpen && (
+                <Box
+                  onClick={() => {}}
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                    zIndex: 99,
+                    borderRadius: $({ size: 12 }),
+                  }}
+                />
+              )}
               <Box
                 sx={{
                   display: 'flex',
@@ -370,16 +413,15 @@ const JournalHome = () => {
                   gap: $({ size: 24 }),
                 }}
                 ref={topSectionRef}>
-                <Box
-                  id='child-info-section'
+                {/* <Box
                   sx={{
                     display: 'flex',
-                    gap: $({ size: 24 }),
+                    gap: $({ size: 16 }),
                     alignItems: { xs: 'flex-start', sm: 'center' },
                     flexDirection: { xs: 'column', sm: 'row' },
                   }}>
                   <Avatar
-                    src={selectedChild?.photo || ''}
+                    src={selectedChild.photo}
                     sx={{
                       width: $({ size: 112 }),
                       height: $({ size: 112 }),
@@ -392,33 +434,34 @@ const JournalHome = () => {
                   />
 
                   <Box
-                    sx={{
-                      width: { xs: '100%', md: '70%', lg: '50%' },
-                      maxWidth: $({ size: 800 }),
-                    }}>
+                    sx={
+                      {
+                        // width: { xs: '100%', md: '70%', lg: '50%' },
+                        // maxWidth: $({ size: 800 }),
+                      }
+                    }>
                     <Typography
                       sx={{
                         fontWeight: '600',
                         fontSize: $({ size: 24 }),
                         color: colors.solids.black,
-                        marginBottom: $({ size: 8 }),
                       }}>
-                      {selectedChild?.fullname || ''}
+                      {selectedChild.fullname}
                     </Typography>
 
                     <Box
                       sx={{
                         display: 'flex',
-                        gap: $({ size: 24 }),
+                        gap: $({ size: 16 }),
                         alignItems: 'center',
                       }}>
-                      <Box sx={{ width: '100%' }}>
+                      <Box sx={{ width: $({ size: 412 }) }}>
                         <Typography
                           sx={{
                             fontWeight: '600',
                             fontSize: $({ size: 13.5 }),
                             color: colors.extra.grey3,
-                            marginBottom: $({ size: 8 }),
+                            mt: $({ size: 4 }),
                           }}>
                           Time spent learning
                         </Typography>
@@ -489,7 +532,9 @@ const JournalHome = () => {
                       </Box>
                     </Box>
                   </Box>
-                </Box>
+                </Box> */}
+
+                <SelectedChildWithTimeDetails />
 
                 <Box
                   sx={{
@@ -497,10 +542,12 @@ const JournalHome = () => {
                     flexDirection: { xs: 'column', sm: 'row' },
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    mt: $({ size: 2 }),
+                    
                   }}>
                   <Box
                     onClick={() => {
-                      setIsModalOpen({ isOpen: true, index: -1 });
+                      setIsModalOpen({ isOpen: true, index: -1, mode: "create" });
                     }}
                     sx={{
                       display: 'flex',
@@ -539,11 +586,11 @@ const JournalHome = () => {
                     containerStyle={{
                       maxWidth: {
                         xs: '100%',
-                        sm: $({ size: 372 }),
+                        sm: $({ size: 352 }),
                       },
                       minWidth: {
                         xs: '100%',
-                        sm: $({ size: 320 }),
+                        sm: $({ size: 352 }),
                       },
                     }}
                     handleSearch={handleSearch}
@@ -568,32 +615,70 @@ const JournalHome = () => {
                   })}px)`,
                   'overflowY': 'scroll',
                   'pr': $({ size: 16 }),
+                  'mr': `${$({ size: 2 })}`,
                   '&::-webkit-scrollbar': {
-                    width: $({ size: 8 }),
-                    borderRadius: $({ size: 8 }),
+                    width: $({ size: 13 }),
+                    borderRadius: $({ size: 13 }),
                   },
                   '&::-webkit-scrollbar-thumb': {
                     backgroundColor: colors.extra.grey3,
-                    borderRadius: $({ size: 8 }),
+                    borderRadius: $({ size: 13 }),
                   },
                 }}>
-                {journals.map((journal, index) => {
+
+                { loadingAllJournals && 
+                  <Box sx={{
+                    minHeight:"100px",
+                  }}>
+                    <CircularProgress
+                      size={50}
+                      sx={{
+                        color: colors.solids.green,
+                        position: 'relative',
+                        top: '50%',
+                        left: '50%',
+                        // marginTop: '-12px',
+                        marginLeft: '-12px',
+                      }}
+                    />
+                  </Box>
+                }
+
+                
+
+                {
+                  (!loadingAllJournals && journals.length === 0) &&
+                        (<Typography
+                          sx={{
+                            fontWeight: '400',
+                            fontSize: $({ size: 13.5 }),
+                            lineHeight: $({ size: 23 }),
+                            color: colors.extra.grey3,
+                          }}>
+                          No Journal added yet..!
+                        </Typography>)
+                }
+
+                { !loadingAllJournals &&
+                journals.map((journal, index) => {
                   return (
                     <Box
+                    key={index}
                       sx={{
                         display: 'flex',
                         flexDirection: 'column',
                         gap: $({ size: 4 }),
-                        pb: $({ size: 16 }),
                         borderBottom: `${$({ size: 1 })} solid ${
                           colors.extra.grey4
                         }`,
-                        mb: $({ size: 16 }),
+                        mb: $({ size: 20 }),
+                        pb: $({ size: 20 }),
                       }}>
                       <Typography
                         sx={{
                           fontWeight: '700',
                           fontSize: $({ size: 13.5 }),
+                          lineHeight: $({ size: 23 }),
                           color: colors.extra.grey3,
                         }}>
                         {journal.date}
@@ -616,21 +701,23 @@ const JournalHome = () => {
 
                         <Box
                           onClick={() => {
-                            setIsModalOpen({ isOpen: true, index });
                             setCurrentSelectedJournal(journal);
+                            setIsModalOpen({ isOpen: true, index: -1, mode:'update' });
                           }}
                           sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: $({ size: 8 }),
+                            gap: $({ size: 12 }),
                             cursor: 'pointer',
                             userSelect: 'none',
+                            mr: $({ size: 12 }),
                           }}>
                           <Box
                             sx={{
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
+                              mt: `-${$({ size: 4 })}`,
                             }}>
                             <EditIcon
                               size={$({ size: 16, numeric: true })}
@@ -656,6 +743,7 @@ const JournalHome = () => {
                           fontSize: $({ size: 18 }),
                           color: colors.extra.grey1,
                           lineHeight: $({ size: 28 }),
+                          mt: $({ size: 4 }),
                         }}>
                         {journal.content}
                       </Typography>
@@ -674,8 +762,9 @@ const JournalHome = () => {
               <CustomButton
                 label='Use AI Magic'
                 sx={{
-                  maxWidth: 'fit-content',
+                  // maxWidth: 'fit-content',
                   alignSelf: 'flex-end',
+                  width: $({ size: 239 }),
                 }}
                 onClick={() => {}}
                 rightIcon={
@@ -686,22 +775,44 @@ const JournalHome = () => {
                 }
               />
             </Box>
+            {isModalOpen.isOpen && (
+              <JournalManagementModal
+                isModalOpen={isModalOpen}
+                setIsModalOpen={setIsModalOpen}
+                currentSelectedJournal={currentSelectedJournal}
+                setCurrentSelectedJournal={setCurrentSelectedJournal}
+                // jounalsData={journals}
+                // setJournalsData={setJournals}
+                offset = {
+                  {
+                    top: 50,
+                    left: 48,
+                    right: 48,
+                }
+                }
+              />
+            )}
           </Grid>
         )}
       </Grid>
-
-      {isModalOpen.isOpen && (
-        <JournalManagementModal
-          isModalOpen={isModalOpen}
-          setIsModalOpen={setIsModalOpen}
-          currentSelectedJournal={currentSelectedJournal}
-          setCurrentSelectedJournal={setCurrentSelectedJournal}
-          jounalsData={journals}
-          setJournalsData={setJournals}
-        />
-      )}
     </DashboardContainer>
   );
 };
 
 export default JournalHome;
+
+
+const loadAllJournals = async (authorizedAxios, child_Id, setLoadingAllJournals, setJournals)=> {
+  setLoadingAllJournals(true);
+  try {
+    const response = await authorizedAxios.get(JOURNAL.GET_ALL + child_Id + "/");
+    
+    console.log(response.data);
+    JournalsData = response.data
+    setJournals(JournalsData);
+  } catch (error) {
+    console.error(error);
+  }
+  setLoadingAllJournals(false);
+  
+}
